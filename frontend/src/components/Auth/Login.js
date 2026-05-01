@@ -16,18 +16,18 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast.error(t('login.pleaseEnterCreds'));
       return;
     }
-    
+
     setLoading(true);
     const result = await loginUser(email, password);
-    
+
     if (result.success) {
       toast.success(t('login.welcome', { name: result.user.name }));
-      
+
       // Force a hard navigation to clear any cached state
       window.location.href = '/';
       // OR use navigate with replace
@@ -68,7 +68,7 @@ function Login() {
             </p>
           </div>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
@@ -92,7 +92,7 @@ function Login() {
                 />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 {t('login.password')}
@@ -139,7 +139,7 @@ function Login() {
               <span className="px-2 bg-white text-gray-500">{t('login.demoAccounts')}</span>
             </div>
           </div>
-          
+
           <div className="mt-4 space-y-2">
             {demoAccounts.map((account, index) => (
               <div

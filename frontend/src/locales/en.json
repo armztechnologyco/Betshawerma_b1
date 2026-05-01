@@ -28,7 +28,8 @@
     "noConstraints": "No shift constraints",
     "loggingOut": "Logging out...",
     "confirmLogout": "Are you sure you want to logout?",
-    "logoutSuccess": "Logged out successfully"
+    "logoutSuccess": "Logged out successfully",
+    "shiftEndsSoon": "Shift ends in {{minutes}} minutes"
   },
   "kitchen": {
     "title": "Kitchen Display",
