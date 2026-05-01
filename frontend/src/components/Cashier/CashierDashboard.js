@@ -138,7 +138,7 @@
 // //       toast.error(`${item.name} is currently unavailable`);
 // //       return;
 // //     }
-    
+
 // //     if (item.category === 'shawarma' || item.category === 'plates' || item.category === 'sandwiches') {
 // //       setSelectedItem(item);
 // //       setCustomizations({ extras: [], notes: '', quantity: 1 });
@@ -158,10 +158,10 @@
 
 // //   const addCustomizedToCart = () => {
 // //     if (!selectedItem) return;
-    
+
 // //     const extrasTotal = customizations.extras.reduce((sum, extra) => sum + extra.price, 0);
 // //     const itemTotal = (selectedItem.basePrice + extrasTotal) * customizations.quantity;
-    
+
 // //     const cartItem = {
 // //       ...selectedItem,
 // //       quantity: customizations.quantity,
@@ -171,7 +171,7 @@
 // //       basePrice: selectedItem.basePrice,
 // //       extrasTotal: extrasTotal
 // //     };
-    
+
 // //     setCart([...cart, cartItem]);
 // //     toast.success(`${customizations.quantity}x ${selectedItem.name} added to cart`);
 // //     setShowCustomizeModal(false);
@@ -236,9 +236,9 @@
 // //         createdAt: new Date().toISOString()
 // //       };
 // //       await addDoc(ordersRef, newOrder);
-      
+
 // //       toast.success(`Order #${newOrder.orderNumber} created successfully!`);
-      
+
 // //       const transactionsRef = collection(db, 'transactions');
 // //       await addDoc(transactionsRef, {
 // //         type: 'income',
@@ -247,7 +247,7 @@
 // //         category: 'sales',
 // //         createdAt: new Date().toISOString()
 // //       });
-      
+
 // //       setCart([]);
 // //       setCustomerName('');
 // //     } catch (error) {
@@ -262,7 +262,7 @@
 // //   const handleAddOrUpdateItem = async (formData, imageFile) => {
 // //     let imageUrl = formData.imageUrl || formData.image;
 // //     let imagePath = formData.imagePath;
-    
+
 // //     if (imageFile) {
 // //       setUploading(true);
 // //       const uploadResult = await uploadImage(formData.id || Date.now(), imageFile);
@@ -277,14 +277,14 @@
 // //       }
 // //       setUploading(false);
 // //     }
-    
+
 // //     const updatedItem = { 
 // //       ...formData, 
 // //       image: imageUrl || formData.image,
 // //       imageUrl: imageUrl || formData.imageUrl,
 // //       imagePath: imagePath || formData.imagePath
 // //     };
-    
+
 // //     if (editingItem) {
 // //       // Update existing item
 // //       const category = formData.category;
@@ -310,7 +310,7 @@
 // //       localStorage.setItem('menuItems', JSON.stringify(updatedMenu));
 // //       toast.success('Item added successfully!');
 // //     }
-    
+
 // //     setShowMenuModal(false);
 // //     setEditingItem(null);
 // //     setImagePreview(null);
@@ -321,7 +321,7 @@
 // //       if (imagePath) {
 // //         await deleteImage(imagePath);
 // //       }
-      
+
 // //       const updatedMenu = {
 // //         ...sampleMenu,
 // //         [category]: sampleMenu[category].filter(item => item.id !== itemId)
@@ -409,7 +409,7 @@
 // //                             <ImageIcon size={32} className="text-gray-400" />
 // //                           </div>
 // //                         )}
-                        
+
 // //                         <h4 className="font-semibold text-lg">{item.name}</h4>
 // //                         <p className="text-gray-600">₪{item.price}</p>
 // //                         <p className="text-sm text-gray-500">{item.weight}</p>
@@ -443,7 +443,7 @@
 // //           ))}
 // //         </div>
 // //       )}
-      
+
 // //       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 // //         {/* Menu Section */}
 // //         <div className="lg:col-span-2">
@@ -490,7 +490,7 @@
 // //                       <ImageIcon size={32} className="text-gray-400" />
 // //                     </div>
 // //                   )}
-                  
+
 // //                   <h3 className="font-semibold text-lg">{item.name}</h3>
 // //                   <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
 // //                     <Scale size={14} />
@@ -524,7 +524,7 @@
 // //               <ShoppingCart className="mr-2" />
 // //               <h2 className="text-2xl font-bold">Current Order</h2>
 // //             </div>
-            
+
 // //             <div className="mb-4">
 // //               <label className="block text-sm font-medium mb-2">Customer Name</label>
 // //               <input
@@ -943,8 +943,8 @@
 //     window.removeEventListener('storage', handleStorageChange);
 //   };
 // }, []);
- 
- 
+
+
 //   const uploadImage = async (id, file) => {
 //     try {
 //       const imageRef = ref(storage, `menu/${id}_${Date.now()}_${file.name}`);
@@ -1158,10 +1158,10 @@
 
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { 
-  ShoppingCart, Plus, Minus, Trash2, 
-  Coffee, Beef, Sandwich, Salad, 
-  Flame, Droplet, X, Edit2, Trash2 as TrashIcon,
+import {
+  ShoppingCart, Plus, Minus, Trash2,
+  Coffee, Beef, Sandwich, Salad,
+  Droplet, X, Edit2, Trash2 as TrashIcon,
   Scale, DollarSign, Lock, Unlock, Upload, Image as ImageIcon
 } from 'lucide-react';
 import { db, storage } from '../../firebase';
@@ -1171,8 +1171,11 @@ import { subscribeToMenu, addMenuItem, updateMenuItem, deleteMenuItem } from '..
 
 function CashierDashboard({ userRole }) {
   const [cart, setCart] = useState([]);
+  const [receiptData, setReceiptData] = useState(null);
   const [customerName, setCustomerName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [orderType, setOrderType] = useState('takeaway');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [activeTab, setActiveTab] = useState('shawarma');
   const [menuItems, setMenuItems] = useState({
     shawarma: [],
@@ -1227,7 +1230,7 @@ function CashierDashboard({ userRole }) {
       setMenuItems(data);
       setLoading(false);
     });
-    
+
     return () => unsubscribe();
   }, []);
 
@@ -1262,7 +1265,7 @@ function CashierDashboard({ userRole }) {
       toast.error(`${item.name} is currently unavailable`);
       return;
     }
-    
+
     if (item.category === 'shawarma' || item.category === 'plates' || item.category === 'sandwiches') {
       setSelectedItem(item);
       setCustomizations({ extras: [], notes: '', quantity: 1 });
@@ -1282,10 +1285,10 @@ function CashierDashboard({ userRole }) {
 
   const addCustomizedToCart = () => {
     if (!selectedItem) return;
-    
+
     const extrasTotal = customizations.extras.reduce((sum, extra) => sum + extra.price, 0);
     const itemTotal = (selectedItem.basePrice + extrasTotal) * customizations.quantity;
-    
+
     const cartItem = {
       ...selectedItem,
       quantity: customizations.quantity,
@@ -1295,7 +1298,7 @@ function CashierDashboard({ userRole }) {
       basePrice: selectedItem.basePrice,
       extrasTotal: extrasTotal
     };
-    
+
     setCart([...cart, cartItem]);
     toast.success(`${customizations.quantity}x ${selectedItem.name} added to cart`);
     setShowCustomizeModal(false);
@@ -1326,8 +1329,170 @@ function CashierDashboard({ userRole }) {
     });
   };
 
-  const calculateTotal = () => {
-    return cart.reduce((total, item) => total + (item.totalPrice || item.price * item.quantity), 0);
+  const calculateTotals = () => {
+    const subtotal = cart.reduce((total, item) => total + (item.totalPrice || item.price * item.quantity), 0);
+    const vat = subtotal * 0.14;
+    const service = orderType === 'dinein' ? subtotal * 0.12 : 0;
+    const total = subtotal + vat + service;
+    return { subtotal, vat, service, total };
+  };
+
+  // const printReceipt = (order) => {
+  //   try {
+  //     console.log('Attempting to print receipt for order:', order);
+  //     const { subtotal, vat, service, total } = order.totals;
+
+  //     const receiptWindow = window.open('', 'PRINT', 'height=800,width=400');
+
+  //     if (!receiptWindow) {
+  //       console.error('Failed to open receipt window. Pop-up blocker might be active.');
+  //       toast.error('Please allow pop-ups to print receipts');
+  //       return;
+  //     }
+
+  //     const html = `
+  //     <html>
+  //       <head>
+  //         <style>
+  //           body { font-family: 'Courier New', monospace; padding: 20px; text-align: center; direction: rtl; }
+  //           .header { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; display: flex; flex-direction: column; align-items: center; }
+  //           .logo { width: 50px; height: 50px; margin-bottom: 5px; }
+  //           .item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; text-align: right; }
+  //           .info { text-align: right; margin-bottom: 10px; font-size: 12px; }
+  //           .total { border-top: 1px dashed #000; margin-top: 10px; padding-top: 10px; font-weight: bold; }
+  //           .summary-item { display: flex; justify-content: space-between; margin-bottom: 3px; text-align: right; }
+  //           .footer { margin-top: 20px; font-size: 12px; }
+  //           .qr-code { width: 80px; height: 80px; margin-top: 10px; }
+  //         </style>
+  //       </head>
+  //       <body>
+  //         <div class="header">
+  //           <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  //             <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path>
+  //             <path d="M7 2v20"></path>
+  //             <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>
+  //           </svg>
+  //           <h2 style="margin: 5px 0;">Betshawerma</h2>
+  //           <p style="font-size:12px; margin:2px 0;">19300 :الخط الساخن</p>
+  //           <p style="font-size:12px; margin:2px 0;">55689 :سجل تجاري</p>
+  //           <p style="font-size:12px; margin:2px 0;">5-967-522 :بطاقة ضريبية</p>
+  //           <p style="font-size:12px; margin:2px 0; margin-top:5px;">${new Date(order.createdAt).toLocaleString()}</p>
+  //         </div>
+  //         <div class="info">
+  //           <div><strong>الكاشير:</strong> ${order.cashierName || 'Cashier'}</div>
+  //           <div><strong>رقم الطلب:</strong> #${order.orderNumber}</div>
+  //           <div><strong>نوع الطلب:</strong> ${order.orderType === 'dinein' ? 'Dine In' : 'Take Away'}</div>
+  //           <div><strong>طريقة الدفع:</strong> ${order.paymentMethod}</div>
+  //         </div>
+  //         <div style="border-bottom: 1px dashed #000; margin-bottom: 10px;"></div>
+
+  //         <div>${order.items.map(item => {
+  //       return `<div class="item"><span>${item.quantity}x ${item.name}</span><span>₪${item.total.toFixed(2)}</span></div>`;
+  //     }).join('')}</div>
+
+  //         <div class="total">
+  //           <div class="summary-item" style="font-weight:normal;"><span>المجموع الفرعي:</span><span>₪${subtotal.toFixed(2)}</span></div>
+  //           <div class="summary-item" style="font-weight:normal;"><span>ضريبة القيمة المضافة (14%):</span><span>₪${vat.toFixed(2)}</span></div>
+  //           ${order.orderType === 'dinein' ? `<div class="summary-item" style="font-weight:normal;"><span>الخدمة (12%):</span><span>₪${service.toFixed(2)}</span></div>` : ''}
+  //           <div class="summary-item" style="font-size: 18px; margin-top: 5px;"><span>الإجمالي المستحق:</span><span>₪${total.toFixed(2)}</span></div>
+  //         </div>
+
+  //         <div class="footer">
+  //           <p>شكرا لزيارتكم!</p>
+  //           <p style="margin: 5px 0;">امسح الكود لرؤية المنيو:</p>
+  //           <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://betshawerma.com/menu" alt="Menu QR Code" class="qr-code" />
+  //         </div>
+  //       </body>
+  //     </html>
+  //   `;
+  //     receiptWindow.document.write(html);
+  //     receiptWindow.document.close();
+  //     receiptWindow.focus();
+
+  //     setTimeout(() => {
+  //       try {
+  //         receiptWindow.print();
+  //         receiptWindow.close();
+  //         console.log('Print dialog triggered successfully');
+  //       } catch (printError) {
+  //         console.error('Error during printing:', printError);
+  //         toast.error('Failed to trigger print dialog');
+  //       }
+  //     }, 500);
+  //   } catch (err) {
+  //     console.error('Critical error in printReceipt function:', err);
+  //     toast.error('Error generating receipt');
+  //   }
+  // };
+
+  // const handleSubmitOrder = async () => {
+  //   if (cart.length === 0) {
+  //     toast.error('Cart is empty');
+  //     return;
+  //   }
+
+  //   setIsProcessing(true);
+  //   const totals = calculateTotals();
+  //   const orderData = {
+  //     items: cart.map(item => ({
+  //       id: item.id,
+  //       name: item.name,
+  //       quantity: item.quantity,
+  //       price: item.price || item.basePrice,
+  //       total: item.totalPrice || item.price * item.quantity,
+  //       extras: item.extras || [],
+  //       notes: item.notes || ''
+  //     })),
+  //     total: totals.total,
+  //     totals: totals,
+  //     orderType,
+  //     paymentMethod,
+  //     cashierName: 'Cashier',
+  //     customerName: customerName || 'Walk-in Customer',
+  //     status: 'pending'
+  //   };
+
+  //   try {
+  //     const ordersRef = collection(db, 'orders');
+  //     const newOrder = {
+  //       ...orderData,
+  //       orderNumber: Math.floor(Math.random() * 9000 + 1000).toString(),
+  //       createdAt: new Date().toISOString()
+  //     };
+
+  //     // Print the receipt immediately BEFORE hitting the database
+  //     // This prevents the popup from being blocked and bypasses any Firebase connection hang-ups
+  //     printReceipt(newOrder);
+
+  //     await addDoc(ordersRef, newOrder);
+
+  //     toast.success(`Order #${newOrder.orderNumber} created successfully!`);
+
+  //     const transactionsRef = collection(db, 'transactions');
+  //     await addDoc(transactionsRef, {
+  //       type: 'income',
+  //       amount: totals.total,
+  //       description: `Order #${newOrder.orderNumber}`,
+  //       category: 'sales',
+  //       createdAt: new Date().toISOString()
+  //     });
+
+  //     setCart([]);
+  //     setCustomerName('');
+  //   } catch (error) {
+  //     toast.error('Failed to create order');
+  //     console.error(error);
+  //   } finally {
+  //     setIsProcessing(false);
+  //   }
+  // };
+
+  const printReceipt = (order) => {
+    setReceiptData(order);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setReceiptData(null), 1000);
+    }, 300);
   };
 
   const handleSubmitOrder = async () => {
@@ -1337,7 +1502,10 @@ function CashierDashboard({ userRole }) {
     }
 
     setIsProcessing(true);
-    const orderData = {
+    const totals = calculateTotals();
+    const orderNumber = Math.floor(Math.random() * 9000 + 1000).toString();
+
+    const newOrder = {
       items: cart.map(item => ({
         id: item.id,
         name: item.name,
@@ -1347,31 +1515,33 @@ function CashierDashboard({ userRole }) {
         extras: item.extras || [],
         notes: item.notes || ''
       })),
-      total: calculateTotal(),
+      total: totals.total,
+      totals,
+      orderType,
+      paymentMethod,
+      cashierName: 'Cashier',
       customerName: customerName || 'Walk-in Customer',
-      status: 'pending'
+      status: 'pending',
+      orderNumber,
+      createdAt: new Date().toISOString()
     };
 
     try {
-      const ordersRef = collection(db, 'orders');
-      const newOrder = {
-        ...orderData,
-        orderNumber: Math.floor(Math.random() * 9000 + 1000).toString(),
-        createdAt: new Date().toISOString()
-      };
-      await addDoc(ordersRef, newOrder);
-      
-      toast.success(`Order #${newOrder.orderNumber} created successfully!`);
-      
-      const transactionsRef = collection(db, 'transactions');
-      await addDoc(transactionsRef, {
+      await addDoc(collection(db, 'orders'), newOrder);
+
+      await addDoc(collection(db, 'transactions'), {
         type: 'income',
-        amount: calculateTotal(),
-        description: `Order #${newOrder.orderNumber}`,
+        amount: totals.total,
+        description: `Order #${orderNumber}`,
         category: 'sales',
         createdAt: new Date().toISOString()
       });
-      
+
+      toast.success(`Order #${orderNumber} created successfully!`);
+
+      // ✅ This now works - no popup, uses window.print() instead
+      printReceipt(newOrder);
+
       setCart([]);
       setCustomerName('');
     } catch (error) {
@@ -1381,12 +1551,11 @@ function CashierDashboard({ userRole }) {
       setIsProcessing(false);
     }
   };
-
   // Admin functions
   const handleAddOrUpdateItem = async (formData, imageFile) => {
     let imageUrl = formData.imageUrl || formData.image;
     let imagePath = formData.imagePath;
-    
+
     if (imageFile) {
       setUploading(true);
       const uploadResult = await uploadImage(formData.id || Date.now(), imageFile);
@@ -1401,14 +1570,14 @@ function CashierDashboard({ userRole }) {
       }
       setUploading(false);
     }
-    
-    const updatedItem = { 
-      ...formData, 
+
+    const updatedItem = {
+      ...formData,
       image: imageUrl || formData.image,
       imageUrl: imageUrl || formData.imageUrl,
       imagePath: imagePath || formData.imagePath
     };
-    
+
     try {
       if (editingItem) {
         await updateMenuItem(editingItem.id, updatedItem);
@@ -1417,7 +1586,7 @@ function CashierDashboard({ userRole }) {
         await addMenuItem(updatedItem);
         toast.success('Item added successfully!');
       }
-      
+
       setShowMenuModal(false);
       setEditingItem(null);
       setImagePreview(null);
@@ -1432,7 +1601,7 @@ function CashierDashboard({ userRole }) {
       if (imagePath) {
         await deleteImage(imagePath);
       }
-      
+
       try {
         await deleteMenuItem(itemId);
         toast.success('Item deleted successfully!');
@@ -1507,14 +1676,14 @@ function CashierDashboard({ userRole }) {
                       <div className="flex-1">
                         {/* Image Display */}
                         {item.imageUrl ? (
-                          <img 
-                            src={item.imageUrl} 
+                          <img
+                            src={item.imageUrl}
                             alt={item.name}
                             className="w-full h-32 object-cover rounded-lg mb-3"
                           />
                         ) : item.image && (item.image.startsWith('data:image') || item.image.startsWith('http')) ? (
-                          <img 
-                            src={item.image} 
+                          <img
+                            src={item.image}
                             alt={item.name}
                             className="w-full h-32 object-cover rounded-lg mb-3"
                           />
@@ -1523,7 +1692,7 @@ function CashierDashboard({ userRole }) {
                             <ImageIcon size={32} className="text-gray-400" />
                           </div>
                         )}
-                        
+
                         <h4 className="font-semibold text-lg">{item.name}</h4>
                         <p className="text-gray-600">₪{item.price}</p>
                         <p className="text-sm text-gray-500">{item.weight}</p>
@@ -1557,7 +1726,7 @@ function CashierDashboard({ userRole }) {
           ))}
         </div>
       )}
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Menu Section */}
         <div className="lg:col-span-2">
@@ -1568,11 +1737,10 @@ function CashierDashboard({ userRole }) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-3 font-medium transition-all ${
-                    activeTab === tab.id
-                      ? `${tab.color} text-white`
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                  className={`flex items-center gap-2 px-6 py-3 font-medium transition-all ${activeTab === tab.id
+                    ? `${tab.color} text-white`
+                    : 'text-gray-600 hover:bg-gray-100'
+                    }`}
                 >
                   <tab.icon size={18} />
                   {tab.name}
@@ -1591,21 +1759,21 @@ function CashierDashboard({ userRole }) {
                 menuItems[activeTab]
                   .filter(item => item.available !== false)
                   .map(item => (
-                    <div 
-                      key={item.id} 
-                      className="border rounded-lg p-4 hover:shadow-lg transition-all cursor-pointer" 
+                    <div
+                      key={item.id}
+                      className="border rounded-lg p-4 hover:shadow-lg transition-all cursor-pointer"
                       onClick={() => addToCart(item)}
                     >
                       {/* Image Display */}
                       {item.imageUrl ? (
-                        <img 
-                          src={item.imageUrl} 
+                        <img
+                          src={item.imageUrl}
                           alt={item.name}
                           className="w-full h-32 object-cover rounded-lg mb-3"
                         />
                       ) : item.image && (item.image.startsWith('data:image') || item.image.startsWith('http')) ? (
-                        <img 
-                          src={item.image} 
+                        <img
+                          src={item.image}
                           alt={item.name}
                           className="w-full h-32 object-cover rounded-lg mb-3"
                         />
@@ -1614,7 +1782,7 @@ function CashierDashboard({ userRole }) {
                           <span className="text-4xl">{item.image || '🍽️'}</span>
                         </div>
                       )}
-                      
+
                       <h3 className="font-semibold text-lg">{item.name}</h3>
                       <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                         <Scale size={14} />
@@ -1649,7 +1817,7 @@ function CashierDashboard({ userRole }) {
               <ShoppingCart className="mr-2" />
               <h2 className="text-2xl font-bold">Current Order</h2>
             </div>
-            
+
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2">Customer Name</label>
               <input
@@ -1659,6 +1827,31 @@ function CashierDashboard({ userRole }) {
                 className="w-full border rounded-lg px-3 py-2"
                 placeholder="Enter customer name"
               />
+            </div>
+
+            <div className="mb-4 grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Order Type</label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="orderType" checked={orderType === 'takeaway'} onChange={() => setOrderType('takeaway')} className="w-4 h-4 text-orange-500" /> Take Away
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="orderType" checked={orderType === 'dinein'} onChange={() => setOrderType('dinein')} className="w-4 h-4 text-orange-500" /> Dine In
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Payment Method</label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="paymentMethod" checked={paymentMethod === 'cash'} onChange={() => setPaymentMethod('cash')} className="w-4 h-4 text-orange-500" /> Cash
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="paymentMethod" checked={paymentMethod === 'visa'} onChange={() => setPaymentMethod('visa')} className="w-4 h-4 text-orange-500" /> Visa
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="border-t border-b py-4 mb-4 max-h-96 overflow-y-auto">
@@ -1711,9 +1904,23 @@ function CashierDashboard({ userRole }) {
             </div>
 
             <div className="mb-4">
-              <div className="flex justify-between text-xl font-bold">
+              <div className="flex justify-between text-gray-600 mb-1">
+                <span>Subtotal:</span>
+                <span>₪{calculateTotals().subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-gray-600 mb-1">
+                <span>VAT (14%):</span>
+                <span>₪{calculateTotals().vat.toFixed(2)}</span>
+              </div>
+              {orderType === 'dinein' && (
+                <div className="flex justify-between text-gray-600 mb-1">
+                  <span>Service (12%):</span>
+                  <span>₪{calculateTotals().service.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-xl font-bold border-t pt-2 mt-2">
                 <span>Total:</span>
-                <span>₪{calculateTotal()}</span>
+                <span>₪{calculateTotals().total.toFixed(2)}</span>
               </div>
             </div>
 
@@ -1771,7 +1978,7 @@ function CashierDashboard({ userRole }) {
               <label className="block font-semibold mb-2">Special Instructions</label>
               <textarea
                 value={customizations.notes}
-                onChange={(e) => setCustomizations({...customizations, notes: e.target.value})}
+                onChange={(e) => setCustomizations({ ...customizations, notes: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2"
                 rows="2"
                 placeholder="e.g., extra spicy, no onions, etc."
@@ -1782,14 +1989,14 @@ function CashierDashboard({ userRole }) {
               <label className="block font-semibold mb-2">Quantity</label>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setCustomizations({...customizations, quantity: Math.max(1, customizations.quantity - 1)})}
+                  onClick={() => setCustomizations({ ...customizations, quantity: Math.max(1, customizations.quantity - 1) })}
                   className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
                 >
                   -
                 </button>
                 <span className="text-xl font-semibold w-12 text-center">{customizations.quantity}</span>
                 <button
-                  onClick={() => setCustomizations({...customizations, quantity: customizations.quantity + 1})}
+                  onClick={() => setCustomizations({ ...customizations, quantity: customizations.quantity + 1 })}
                   className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
                 >
                   +
@@ -1879,9 +2086,9 @@ function CashierDashboard({ userRole }) {
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                   {(imagePreview || editingItem?.imageUrl || editingItem?.image) && (
                     <div className="mb-3">
-                      <img 
-                        src={imagePreview || editingItem?.imageUrl || editingItem?.image} 
-                        alt="Preview" 
+                      <img
+                        src={imagePreview || editingItem?.imageUrl || editingItem?.image}
+                        alt="Preview"
                         className="w-full h-40 object-cover rounded-lg"
                       />
                     </div>
@@ -2015,6 +2222,87 @@ function CashierDashboard({ userRole }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Receipt - only visible when printing */}
+      <style>
+        {`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #receipt-print-area,
+          #receipt-print-area * {
+            visibility: visible;
+          }
+          #receipt-print-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            font-family: 'Courier New', monospace;
+            direction: rtl;
+            padding: 20px;
+          }
+        }
+        `}
+      </style>
+
+      {receiptData && (
+        <div id="receipt-print-area">
+          <div style={{ textAlign: 'center', borderBottom: '1px dashed #000', paddingBottom: '10px', marginBottom: '10px' }}>
+            <h2 style={{ margin: '5px 0' }}>Betshawerma</h2>
+            <p style={{ fontSize: '12px', margin: '2px 0' }}>19300 :الخط الساخن</p>
+            <p style={{ fontSize: '12px', margin: '2px 0' }}>55689 :سجل تجاري</p>
+            <p style={{ fontSize: '12px', margin: '2px 0' }}>5-967-522 :بطاقة ضريبية</p>
+            <p style={{ fontSize: '12px', margin: '5px 0 2px' }}>
+              {new Date(receiptData.createdAt).toLocaleString()}
+            </p>
+          </div>
+
+          <div style={{ textAlign: 'right', marginBottom: '10px', fontSize: '12px' }}>
+            <div><strong>الكاشير:</strong> {receiptData.cashierName}</div>
+            <div><strong>رقم الطلب:</strong> #{receiptData.orderNumber}</div>
+            <div><strong>نوع الطلب:</strong> {receiptData.orderType === 'dinein' ? 'Dine In' : 'Take Away'}</div>
+            <div><strong>طريقة الدفع:</strong> {receiptData.paymentMethod}</div>
+          </div>
+
+          <div style={{ borderBottom: '1px dashed #000', marginBottom: '10px' }} />
+
+          <div>
+            {receiptData.items.map((item, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '14px' }}>
+                <span>{item.quantity}x {item.name}</span>
+                <span>₪{item.total.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+              <span>المجموع الفرعي:</span>
+              <span>₪{receiptData.totals.subtotal.toFixed(2)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+              <span>ضريبة القيمة المضافة (14%):</span>
+              <span>₪{receiptData.totals.vat.toFixed(2)}</span>
+            </div>
+            {receiptData.orderType === 'dinein' && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                <span>الخدمة (12%):</span>
+                <span>₪{receiptData.totals.service.toFixed(2)}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '18px', marginTop: '5px' }}>
+              <span>الإجمالي المستحق:</span>
+              <span>₪{receiptData.totals.total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '20px', fontSize: '12px', textAlign: 'center' }}>
+            <p>شكرا لزيارتكم!</p>
           </div>
         </div>
       )}

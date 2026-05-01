@@ -1,0 +1,18 @@
+{
+  "login": {
+    "pleaseEnterCreds": "Please enter email and password",
+    "welcome": "Welcome {{name}}!",
+    "loginFailed": "Login failed",
+    "systemTitle": "Shawarma Shop System",
+    "signInTitle": "Sign in to your account",
+    "emailAddress": "Email Address",
+    "emailPlaceholder": "Enter your email",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "signingIn": "Signing in...",
+    "signIn": "Sign in",
+    "demoAccounts": "Demo Accounts",
+    "access": "Access",
+    "use": "Use"
+  }
+}

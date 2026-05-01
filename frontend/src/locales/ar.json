@@ -1,0 +1,18 @@
+{
+  "login": {
+    "pleaseEnterCreds": "يرجى إدخال البريد الإلكتروني وكلمة المرور",
+    "welcome": "أهلاً بك {{name}}!",
+    "loginFailed": "فشل تسجيل الدخول",
+    "systemTitle": "نظام بيت الشاورما",
+    "signInTitle": "تسجيل الدخول إلى حسابك",
+    "emailAddress": "البريد الإلكتروني",
+    "emailPlaceholder": "أدخل بريدك الإلكتروني",
+    "password": "كلمة المرور",
+    "passwordPlaceholder": "أدخل كلمة المرور",
+    "signingIn": "جاري تسجيل الدخول...",
+    "signIn": "تسجيل الدخول",
+    "demoAccounts": "الحسابات التجريبية",
+    "access": "صلاحية الوصول",
+    "use": "استخدام"
+  }
+}
