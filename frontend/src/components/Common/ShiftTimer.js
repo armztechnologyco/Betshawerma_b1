@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Clock, AlertCircle, LogOut, Shield } from 'lucide-react';
 import { getCurrentUser, logoutUser } from '../../services/authService';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 function ShiftTimer() {
+  const { t } = useTranslation();
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [shiftInfo, setShiftInfo] = useState(null);
   const [isLate, setIsLate] = useState(false);
@@ -62,8 +64,19 @@ function ShiftTimer() {
           return;
         }
 
-        const start = user.shiftStart || '09:00';
-        const end = user.shiftEnd || '17:00';
+        const ensureTimeString = (val) => {
+          if (!val) return '09:00';
+          if (typeof val === 'string') return val;
+          // Handle Firestore Timestamp (object with seconds/nanoseconds)
+          if (val && typeof val === 'object' && 'seconds' in val) {
+            const date = new Date(val.seconds * 1000);
+            return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+          }
+          return '09:00';
+        };
+
+        const start = ensureTimeString(user.shiftStart);
+        const end = ensureTimeString(user.shiftEnd);
         setShiftInfo({ start, end });
         setIsAdmin(false);
       }
@@ -82,16 +95,35 @@ function ShiftTimer() {
 
   const calculateTimeRemaining = (shiftStart, shiftEnd) => {
     const now = new Date();
-    const startTime = new Date();
-    const endTime = new Date();
+    
+    const [startHour, startMinute] = shiftStart.split(':').map(n => parseInt(n));
+    const [endHour, endMinute] = shiftEnd.split(':').map(n => parseInt(n));
 
-    const [startHour, startMinute] = shiftStart.split(':');
-    const [endHour, endMinute] = shiftEnd.split(':');
+    let startTime = new Date(now);
+    startTime.setHours(startHour, startMinute, 0, 0);
+    
+    let endTime = new Date(now);
+    endTime.setHours(endHour, endMinute, 0, 0);
 
-    startTime.setHours(parseInt(startHour), parseInt(startMinute), 0, 0);
-    endTime.setHours(parseInt(endHour), parseInt(endMinute), 0, 0);
+    const isOvernight = startTime > endTime;
 
-    // Before shift
+    // Adjust dates for overnight shifts
+    if (isOvernight) {
+      if (now >= startTime) {
+        // We are in the first half of the overnight shift (before midnight)
+        // End time is tomorrow
+        endTime.setDate(endTime.getDate() + 1);
+      } else if (now <= endTime) {
+        // We are in the second half of the overnight shift (after midnight)
+        // Start time was yesterday
+        startTime.setDate(startTime.getDate() - 1);
+      } else {
+        // We are between the shift end and next shift start (e.g., 10 AM for a 11PM-6AM shift)
+        // This is "Before Shift" (starts tonight)
+      }
+    }
+
+    // Status: Not Started
     if (now < startTime) {
       const diff = startTime - now;
       setIsLate(false);
@@ -102,11 +134,11 @@ function ShiftTimer() {
       };
     }
 
-    // After shift
+    // Status: Ended
     if (now > endTime) {
       if (!hasLoggedOut.current) {
         hasLoggedOut.current = true;
-        toast('Shift ended. Logging out...', { icon: 'ℹ️' });
+        toast(t('shiftTimer.loggingOut'), { icon: 'ℹ️' });
         setTimeout(async () => {
           await logoutUser();
           navigate('/login');
@@ -121,7 +153,7 @@ function ShiftTimer() {
       };
     }
 
-    // During shift
+    // Status: Active (During Shift)
     const diff = endTime - now;
 
     if (diff <= 15 * 60 * 1000 && !showWarning) {
@@ -131,6 +163,7 @@ function ShiftTimer() {
       });
     }
 
+    // Late check (30 min threshold)
     const lateThreshold = new Date(startTime.getTime() + 30 * 60000);
     setIsLate(now > lateThreshold);
 
@@ -148,13 +181,13 @@ function ShiftTimer() {
   };
 
   const handleManualLogout = async () => {
-    if (window.confirm('Are you sure you want to logout?')) {
+    if (window.confirm(t('shiftTimer.confirmLogout'))) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
       await logoutUser();
       navigate('/login');
-      toast.success('Logged out successfully');
+      toast.success(t('shiftTimer.logoutSuccess'));
     }
   };
 
@@ -182,10 +215,10 @@ function ShiftTimer() {
         
         <div>
           <div className="text-sm font-semibold text-gray-700">
-            Admin Access
+            {t('shiftTimer.adminAccess')}
           </div>
           <div className="text-xs text-purple-600 font-medium">
-            No shift constraints
+            {t('shiftTimer.noConstraints')}
           </div>
         </div>
 
@@ -204,7 +237,7 @@ function ShiftTimer() {
     return (
       <div className="flex items-center gap-3 bg-white rounded-lg px-4 py-2 shadow-md">
         <Clock size={20} className="animate-pulse text-blue-500" />
-        <span className="text-gray-600">Loading shift...</span>
+        <span className="text-gray-600">{t('shiftTimer.loadingShift')}</span>
       </div>
     );
   }
@@ -213,7 +246,7 @@ function ShiftTimer() {
     return (
       <div className="flex items-center gap-3 bg-white rounded-lg px-4 py-2 shadow-md">
         <Clock size={20} className="text-gray-400" />
-        <span className="text-gray-500">No shift assigned</span>
+        <span className="text-gray-500">{t('shiftTimer.noShiftAssigned')}</span>
         
         <button
           onClick={handleManualLogout}
@@ -232,12 +265,12 @@ function ShiftTimer() {
 
       <div>
         <div className="text-sm font-semibold text-gray-700">
-          Shift: {shiftInfo.start} - {shiftInfo.end}
+          {t('shiftTimer.shift')}: {shiftInfo.start} - {shiftInfo.end}
         </div>
 
         {timeRemaining && (
           <div className={`text-xs font-mono font-bold ${getStatusColor()}`}>
-            {timeRemaining.message}:{' '}
+            {t(`shiftTimer.${timeRemaining.status === 'not_started' ? 'shiftStartsIn' : (timeRemaining.status === 'ended' ? 'shiftEnded' : 'timeRemaining')}`)}:{' '}
             <span className="font-mono">
               {String(timeRemaining.hours).padStart(2, '0')}:
               {String(timeRemaining.minutes).padStart(2, '0')}:
@@ -248,13 +281,13 @@ function ShiftTimer() {
 
         {isLate && timeRemaining?.status === 'active' && (
           <div className="text-xs text-orange-500 flex items-center gap-1 mt-0.5">
-            <AlertCircle size={10} /> You're late!
+            <AlertCircle size={10} /> {t('shiftTimer.youAreLate')}
           </div>
         )}
 
         {timeRemaining?.status === 'not_started' && (
           <div className="text-xs text-yellow-500 flex items-center gap-1 mt-0.5">
-            <AlertCircle size={10} /> Shift not started yet
+            <AlertCircle size={10} /> {t('shiftTimer.shiftNotStarted')}
           </div>
         )}
       </div>

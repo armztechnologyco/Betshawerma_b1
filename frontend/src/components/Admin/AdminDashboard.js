@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { 
@@ -26,6 +27,7 @@ import { db } from '../../firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy } from 'firebase/firestore';
 
 function AdminDashboard({ initialTab = 'overview' }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [user, setUser] = useState(null);
@@ -134,23 +136,23 @@ function AdminDashboard({ initialTab = 'overview' }) {
 
   // Tab configuration
   const tabs = [
-    { id: 'overview', name: 'Overview', icon: LayoutDashboard },
-    { id: 'cashier', name: 'Cashier', icon: CreditCard },
-    { id: 'menu', name: 'Menu Management', icon: Package },
-    { id: 'kitchen', name: 'Kitchen', icon: ChefHat },
-    { id: 'purchases', name: 'Purchases', icon: ShoppingBag },
-    { id: 'salaries', name: 'Salaries', icon: Users },
-    { id: 'reports', name: 'Reports', icon: FileText },
-    { id: 'accounting', name: 'Accounting', icon: BookOpen },
-    { id: 'users', name: 'Users', icon: Users }
+    { id: 'overview', name: t('admin.tabs.overview'), icon: LayoutDashboard },
+    { id: 'cashier', name: t('admin.tabs.cashier'), icon: CreditCard },
+    { id: 'menu', name: t('admin.tabs.menu'), icon: Package },
+    { id: 'kitchen', name: t('admin.tabs.kitchen'), icon: ChefHat },
+    { id: 'purchases', name: t('admin.tabs.purchases'), icon: ShoppingBag },
+    { id: 'salaries', name: t('admin.tabs.salaries'), icon: Users },
+    { id: 'reports', name: t('admin.tabs.reports'), icon: FileText },
+    { id: 'accounting', name: t('admin.tabs.accounting'), icon: BookOpen },
+    { id: 'users', name: t('admin.tabs.users'), icon: Users }
   ];
 
   const categoryConfig = {
-    shawarma: { name: 'Shawarma', icon: Beef, color: 'bg-red-500' },
-    plates: { name: 'Plates', icon: Salad, color: 'bg-green-500' },
-    sandwiches: { name: 'Sandwiches', icon: Sandwich, color: 'bg-orange-500' },
-    sides: { name: 'Sides', icon: Coffee, color: 'bg-purple-500' },
-    drinks: { name: 'Drinks', icon: Droplet, color: 'bg-blue-500' }
+    shawarma: { name: t('cashier.categories.shawarma'), icon: Beef, color: 'bg-red-500' },
+    plates: { name: t('cashier.categories.plates'), icon: Salad, color: 'bg-green-500' },
+    sandwiches: { name: t('cashier.categories.sandwiches'), icon: Sandwich, color: 'bg-orange-500' },
+    sides: { name: t('cashier.categories.sides'), icon: Coffee, color: 'bg-purple-500' },
+    drinks: { name: t('cashier.categories.drinks'), icon: Droplet, color: 'bg-blue-500' }
   };
 
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -608,11 +610,22 @@ const handleEditItem = (item) => {
     }
   };
 
+  const formatShiftTime = (val) => {
+    if (!val) return '09:00';
+    if (typeof val === 'string') return val;
+    // Handle Firestore Timestamp
+    if (val && typeof val === 'object' && 'seconds' in val) {
+      const date = new Date(val.seconds * 1000);
+      return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    }
+    return '09:00';
+  };
+
   // Cashier functions
   const addToCart = (item) => {
     const cartItem = { ...item, quantity: 1, extras: [], totalPrice: item.price };
     setCart([...cart, cartItem]);
-    toast.success(`${item.name} added`);
+    toast.success(t('cashier.addedToCart', { name: item.name }));
   };
 
   const updateQuantity = (itemId, change) => {
@@ -621,13 +634,13 @@ const handleEditItem = (item) => {
 
   const removeFromCart = (itemId) => {
     setCart(cart.filter(item => item.id !== itemId));
-    toast.success('Item removed');
+    toast.success(t('cashier.removedFromCart'));
   };
 
   const calculateTotal = () => cart.reduce((total, item) => total + (item.price * item.quantity), 0);
 
   const handleOrder = async () => {
-    if (!cart.length) return toast.error("Cart empty");
+    if (!cart.length) return toast.error(t('cashier.cartEmpty'));
     setProcessing(true);
     try {
       const order = { 
@@ -654,12 +667,12 @@ const handleEditItem = (item) => {
       
       calculateInventory();
       
-      toast.success(`Order #${order.orderNumber} created`);
+      toast.success(t('cashier.orderCreated', { number: order.orderNumber }));
       setCart([]);
       setCustomerName('');
       fetchStats();
     } catch (error) { 
-      toast.error("Order failed"); 
+      toast.error(t('cashier.failedToCreate')); 
       console.error(error);
     } finally { 
       setProcessing(false); 
@@ -692,8 +705,8 @@ const handleEditItem = (item) => {
     setEditUserData({ 
       name: userToEdit.name, 
       role: userToEdit.role, 
-      shiftStart: userToEdit.shiftStart || '09:00', 
-      shiftEnd: userToEdit.shiftEnd || '17:00' 
+      shiftStart: formatShiftTime(userToEdit.shiftStart), 
+      shiftEnd: formatShiftTime(userToEdit.shiftEnd) 
     });
     setShowEditUser(true);
   };
@@ -751,10 +764,10 @@ const handleEditItem = (item) => {
       <nav className="bg-gradient-to-r from-orange-600 to-red-600 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
-            <div className="flex items-center"><h1 className="text-white text-xl font-bold">Admin Dashboard</h1></div>
+            <div className="flex items-center"><h1 className="text-white text-xl font-bold">{t('admin.dashboard')}</h1></div>
             <div className="flex items-center space-x-4">
               <span className="text-white">Welcome, {user?.name}</span>
-              <button onClick={handleLogout} className="bg-orange-700 text-white px-4 py-2 rounded-lg">Logout</button>
+              <button onClick={handleLogout} className="bg-orange-700 text-white px-4 py-2 rounded-lg">{t('admin.logout')}</button>
             </div>
           </div>
         </div>
@@ -777,10 +790,10 @@ const handleEditItem = (item) => {
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">Today's Revenue</h3><p className="text-3xl font-bold text-green-600">₪{stats.todayRevenue || 0}</p></div>
-            <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">Today's Orders</h3><p className="text-3xl font-bold text-blue-600">{stats.totalOrdersToday || 0}</p></div>
-            <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">Active Orders</h3><p className="text-3xl font-bold text-orange-600">{(stats.pendingOrders || 0) + (stats.preparingOrders || 0)}</p></div>
-            <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">Total Users</h3><p className="text-3xl font-bold text-purple-600">{users.length}</p></div>
+            <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">{t('admin.overview.totalSales')}</h3><p className="text-3xl font-bold text-green-600">₪{stats.todayRevenue || 0}</p></div>
+            <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">{t('admin.overview.totalOrders')}</h3><p className="text-3xl font-bold text-blue-600">{stats.totalOrdersToday || 0}</p></div>
+            <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">{t('admin.overview.pendingOrders')}</h3><p className="text-3xl font-bold text-orange-600">{(stats.pendingOrders || 0) + (stats.preparingOrders || 0)}</p></div>
+            <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">{t('admin.users.title')}</h3><p className="text-3xl font-bold text-purple-600">{users.length}</p></div>
           </div>
         )}
 
@@ -879,7 +892,7 @@ const handleEditItem = (item) => {
                     <p className="text-xs text-gray-500 mt-1">{item.includes}</p>
                   )}
                   <button className="mt-3 bg-green-500 text-white px-3 py-1 rounded w-full hover:bg-green-600 transition">
-                    Add to Order
+                    {t('cashier.addToOrder')}
                   </button>
                 </div>
               ))
@@ -895,17 +908,17 @@ const handleEditItem = (item) => {
     <div className="lg:col-span-1">
       {/* Cart section remains the same */}
       <div className="bg-white rounded-lg shadow-lg p-6 sticky top-20">
-        <h3 className="text-xl font-bold mb-4">Current Order</h3>
+        <h3 className="text-xl font-bold mb-4">{t('cashier.currentOrder')}</h3>
         <input 
           type="text" 
           value={customerName} 
           onChange={(e) => setCustomerName(e.target.value)} 
           className="w-full border rounded-lg px-3 py-2 mb-4"
-          placeholder="Customer name"
+          placeholder={t('cashier.enterCustomerName')}
         />
         <div className="border-t border-b py-4 mb-4 max-h-96 overflow-y-auto">
           {cart.length === 0 ? (
-            <p className="text-gray-500 text-center">Cart is empty</p>
+            <p className="text-gray-500 text-center">{t('cashier.cartEmpty')}</p>
           ) : (
             cart.map(item => (
               <div key={item.id} className="flex justify-between items-center mb-3 pb-2 border-b">
@@ -939,7 +952,7 @@ const handleEditItem = (item) => {
           )}
         </div>
         <div className="flex justify-between text-xl font-bold mb-4">
-          <span>Total:</span>
+          <span>{t('cashier.total')}:</span>
           <span>₪{calculateTotal()}</span>
         </div>
         <button 
@@ -947,7 +960,7 @@ const handleEditItem = (item) => {
           disabled={processing || !cart.length} 
           className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 disabled:bg-gray-400 transition"
         >
-          {processing ? 'Processing...' : 'Complete Order'}
+          {processing ? t('cashier.processing') : t('cashier.completeOrder')}
         </button>
       </div>
     </div>
@@ -957,7 +970,7 @@ const handleEditItem = (item) => {
         {/* MENU MANAGEMENT TAB */}
         {activeTab === 'menu' && (
           <div>
-            <div className="flex justify-between mb-6"><h2 className="text-2xl font-bold">Menu Management</h2><button onClick={handleAddItem} className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2"><Plus size={18} />Add Item</button></div>
+            <div className="flex justify-between mb-6"><h2 className="text-2xl font-bold">{t('admin.tabs.menu')}</h2><button onClick={handleAddItem} className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2"><Plus size={18} />{t('admin.inventory.addPurchase')}</button></div>
             <div className="flex gap-2 mb-4 overflow-x-auto">
               {Object.entries(categoryConfig).map(([key, config]) => {
                 const Icon = config.icon;
@@ -967,7 +980,7 @@ const handleEditItem = (item) => {
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-50">
-                  <tr><th className="px-6 py-3 text-left">Image</th><th className="px-6 py-3 text-left">Name</th><th className="px-6 py-3 text-left">Price</th><th className="px-6 py-3 text-left">Weight</th><th className="px-6 py-3 text-left">Status</th><th className="px-6 py-3 text-left">Actions</th></tr>
+                  <tr><th className="px-6 py-3 text-left">{t('admin.inventory.history')}</th><th className="px-6 py-3 text-left">{t('admin.inventory.itemName')}</th><th className="px-6 py-3 text-left">{t('admin.inventory.price')}</th><th className="px-6 py-3 text-left">{t('admin.inventory.unit')}</th><th className="px-6 py-3 text-left">{t('reports.status')}</th><th className="px-6 py-3 text-left">{t('admin.users.actions')}</th></tr>
                 </thead>
                 <tbody>
                   {(menuItems[selectedCategory] || []).map(item => (
@@ -982,7 +995,7 @@ const handleEditItem = (item) => {
                       <td className="px-6 py-4">{item.name}</td>
                       <td className="px-6 py-4">₪{item.price}</td>
                       <td className="px-6 py-4">{item.weight}</td>
-                      <td className="px-6 py-4"><button onClick={() => toggleItemAvailability(item)} className={`px-2 py-1 rounded text-xs ${item.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{item.available ? 'Available' : 'Unavailable'}</button></td>
+                      <td className="px-6 py-4"><button onClick={() => toggleItemAvailability(item)} className={`px-2 py-1 rounded text-xs ${item.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{item.available ? t('kitchen.ready') : t('cashier.unavailable', { name: '' })}</button></td>
                       <td className="px-6 py-4"><div className="flex gap-2"><button onClick={() => handleEditItem(item)} className="text-blue-600"><Edit2 size={18} /></button><button onClick={() => handleDeleteItem(item)} className="text-red-600"><Trash2 size={18} /></button></div></td>
                     </tr>
                   ))}
@@ -1074,11 +1087,11 @@ const handleEditItem = (item) => {
           {/* Action Buttons */}
           <div className="flex gap-2 mt-4">
             {order.status === 'pending' && (
-              <button 
+                <button 
                 onClick={() => startPreparation(order.id, order.items)} 
                 className="flex-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
               >
-                Start Preparation
+                {t('kitchen.startPrep')}
               </button>
             )}
             
@@ -1087,7 +1100,7 @@ const handleEditItem = (item) => {
                 onClick={() => updateOrderStatus(order.id, 'ready')} 
                 className="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
               >
-                Mark as Ready
+                {t('kitchen.markReady')}
               </button>
             )}
             
@@ -1096,7 +1109,7 @@ const handleEditItem = (item) => {
                 onClick={() => updateOrderStatus(order.id, 'completed')} 
                 className="flex-1 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
               >
-                Complete Order
+                {t('kitchen.completeOrder')}
               </button>
             )}
           </div>
@@ -1106,7 +1119,7 @@ const handleEditItem = (item) => {
     
     {kitchenOrders.length === 0 && (
       <div className="col-span-3 text-center py-12 text-gray-500">
-        No active orders in kitchen
+        {t('kitchen.noActive')}
       </div>
     )}
   </div>
@@ -1117,25 +1130,25 @@ const handleEditItem = (item) => {
         {activeTab === 'purchases' && (
           <div>
             <div className="flex justify-between mb-6">
-              <h2 className="text-2xl font-bold">Purchases & Inventory</h2>
+              <h2 className="text-2xl font-bold">{t('admin.inventory.title')}</h2>
               <button onClick={() => setShowAddPurchase(true)} className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                <Plus size={18} /> Add Purchase
+                <Plus size={18} /> {t('admin.inventory.addPurchase')}
               </button>
             </div>
             
             <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-              <h3 className="text-xl font-bold mb-4">Inventory Summary</h3>
+              <h3 className="text-xl font-bold mb-4">{t('admin.inventory.history')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Total Purchased</p>
+                  <p className="text-sm text-gray-600">{t('admin.inventory.totalPurchased')}</p>
                   <p className="text-2xl font-bold text-blue-600">{inventoryData.totalPurchased.toFixed(2)} kg</p>
                 </div>
                 <div className="bg-orange-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Total Consumed (from orders)</p>
+                  <p className="text-sm text-gray-600">{t('admin.inventory.totalConsumed')}</p>
                   <p className="text-2xl font-bold text-orange-600">{inventoryData.totalConsumed.toFixed(2)} kg</p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Remaining Stock</p>
+                  <p className="text-sm text-gray-600">{t('admin.inventory.remainingStock')}</p>
                   <p className="text-2xl font-bold text-green-600">{inventoryData.remainingStock.toFixed(2)} kg</p>
                 </div>
               </div>
@@ -1159,10 +1172,10 @@ const handleEditItem = (item) => {
             </div>
 
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <h3 className="text-xl font-bold p-6 border-b">Purchase History</h3>
+              <h3 className="text-xl font-bold p-6 border-b">{t('admin.inventory.history')}</h3>
               <table className="w-full">
                 <thead className="bg-gray-50">
-                  <tr><th className="px-6 py-3">Date</th><th className="px-6 py-3">Item</th><th className="px-6 py-3">Quantity</th><th className="px-6 py-3">Unit</th><th className="px-6 py-3">Price/Unit</th><th className="px-6 py-3">Total</th></tr>
+                  <tr><th className="px-6 py-3">{t('admin.inventory.date')}</th><th className="px-6 py-3">{t('admin.inventory.itemName')}</th><th className="px-6 py-3">{t('admin.inventory.quantity')}</th><th className="px-6 py-3">{t('admin.inventory.unit')}</th><th className="px-6 py-3">{t('admin.inventory.price')}</th><th className="px-6 py-3">{t('admin.inventory.total')}</th></tr>
                 </thead>
                 <tbody>
                   {purchases.map(p => (
@@ -1188,7 +1201,7 @@ const handleEditItem = (item) => {
         {activeTab === 'salaries' && (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Salary Management</h2>
+              <h2 className="text-2xl font-bold">{t('admin.salaries.title')}</h2>
               <button onClick={() => setShowAddSalary(true)} className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                 <Plus size={18} /> Add Salary
               </button>
@@ -1198,25 +1211,25 @@ const handleEditItem = (item) => {
               <h3 className="text-lg font-semibold mb-4">Filters</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Employee Name</label>
+                  <label className="block text-sm font-medium mb-1">{t('admin.salaries.employeeName')}</label>
                   <input type="text" placeholder="Search employee..." className="w-full border rounded-lg px-3 py-2" value={salaryFilter.employeeName} onChange={(e) => setSalaryFilter({...salaryFilter, employeeName: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Month</label>
+                  <label className="block text-sm font-medium mb-1">{t('admin.salaries.month')}</label>
                   <select className="w-full border rounded-lg px-3 py-2" value={salaryFilter.month} onChange={(e) => setSalaryFilter({...salaryFilter, month: e.target.value})}>
                     <option value="all">All Months</option>
                     {months.map((month, i) => (<option key={i} value={i+1}>{month}</option>))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Year</label>
+                  <label className="block text-sm font-medium mb-1">{t('admin.salaries.year')}</label>
                   <select className="w-full border rounded-lg px-3 py-2" value={salaryFilter.year} onChange={(e) => setSalaryFilter({...salaryFilter, year: e.target.value})}>
                     <option value="all">All Years</option>
                     {years.map(year => (<option key={year} value={year}>{year}</option>))}
                   </select>
                 </div>
                 <div className="flex items-end">
-                  <button onClick={clearSalaryFilters} className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">Clear Filters</button>
+                  <button onClick={clearSalaryFilters} className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">{t('admin.salaries.clearFilters')}</button>
                 </div>
               </div>
             </div>
@@ -1285,10 +1298,10 @@ const handleEditItem = (item) => {
             <h2 className="text-2xl font-bold mb-6">Reports</h2>
             <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div><label className="block text-sm font-medium mb-1">From Date</label><input type="date" value={reportFilter.fromDate} onChange={(e) => setReportFilter({...reportFilter, fromDate: e.target.value})} className="w-full border rounded px-3 py-2" /></div>
-                <div><label className="block text-sm font-medium mb-1">To Date</label><input type="date" value={reportFilter.toDate} onChange={(e) => setReportFilter({...reportFilter, toDate: e.target.value})} className="w-full border rounded px-3 py-2" /></div>
-                <div><label className="block text-sm font-medium mb-1">Status</label><select value={reportFilter.status} onChange={(e) => setReportFilter({...reportFilter, status: e.target.value})} className="w-full border rounded px-3 py-2"><option value="all">All</option><option value="pending">Pending</option><option value="preparing">Preparing</option><option value="ready">Ready</option><option value="completed">Completed</option></select></div>
-                <div className="flex items-end"><button onClick={generateReport} className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 flex items-center gap-2"><Filter size={18} /> Generate Report</button></div>
+                <div><label className="block text-sm font-medium mb-1">{t('admin.reports.fromDate')}</label><input type="date" value={reportFilter.fromDate} onChange={(e) => setReportFilter({...reportFilter, fromDate: e.target.value})} className="w-full border rounded px-3 py-2" /></div>
+                <div><label className="block text-sm font-medium mb-1">{t('admin.reports.toDate')}</label><input type="date" value={reportFilter.toDate} onChange={(e) => setReportFilter({...reportFilter, toDate: e.target.value})} className="w-full border rounded px-3 py-2" /></div>
+                <div><label className="block text-sm font-medium mb-1">{t('admin.reports.status')}</label><select value={reportFilter.status} onChange={(e) => setReportFilter({...reportFilter, status: e.target.value})} className="w-full border rounded px-3 py-2"><option value="all">{t('admin.reports.all')}</option><option value="pending">{t('reports.statusPending')}</option><option value="preparing">{t('reports.statusPreparing')}</option><option value="ready">{t('reports.statusReady')}</option><option value="completed">{t('reports.statusCompleted')}</option></select></div>
+                <div className="flex items-end"><button onClick={generateReport} className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 flex items-center gap-2"><Filter size={18} /> {t('admin.reports.generate')}</button></div>
               </div>
             </div>
             {showReport && (
@@ -1296,12 +1309,12 @@ const handleEditItem = (item) => {
                 <div className="flex justify-between items-center p-6 border-b">
                   <h3 className="text-xl font-bold">Order Report</h3>
                   <button className="text-blue-600 flex items-center gap-1">
-                    <Download size={18} /> Export
+                    <Download size={18} /> {t('admin.reports.download')}
                   </button>
                 </div>
                 <table className="w-full">
                   <thead className="bg-gray-50">
-                    <tr><th className="px-6 py-3">Order #</th><th className="px-6 py-3">Date</th><th className="px-6 py-3">Customer</th><th className="px-6 py-3">Items</th><th className="px-6 py-3">Total</th><th className="px-6 py-3">Status</th></tr>
+                    <tr><th className="px-6 py-3">{t('cashier.receipt.orderNumber')}</th><th className="px-6 py-3">{t('admin.inventory.date')}</th><th className="px-6 py-3">{t('admin.users.fullName')}</th><th className="px-6 py-3">{t('admin.tabs.menu')}</th><th className="px-6 py-3">{t('admin.inventory.total')}</th><th className="px-6 py-3">{t('admin.reports.status')}</th></tr>
                   </thead>
                   <tbody>
                     {reportData.map(order => (
@@ -1329,9 +1342,9 @@ const handleEditItem = (item) => {
         {activeTab === 'accounting' && (
           <div>
             <div className="grid grid-cols-3 gap-6 mb-8">
-              <div className="bg-white rounded-lg p-6"><h3>Total Income</h3><p className="text-3xl font-bold text-green-600">₪{summary.totalIncome}</p></div>
-              <div className="bg-white rounded-lg p-6"><h3>Total Expenses</h3><p className="text-3xl font-bold text-red-600">₪{summary.totalExpense}</p></div>
-              <div className="bg-white rounded-lg p-6"><h3>Net Profit</h3><p className="text-3xl font-bold text-blue-600">₪{summary.profit}</p></div>
+              <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.income')}</h3><p className="text-3xl font-bold text-green-600">₪{summary.totalIncome}</p></div>
+              <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.expenses')}</h3><p className="text-3xl font-bold text-red-600">₪{summary.totalExpense}</p></div>
+              <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.profit')}</h3><p className="text-3xl font-bold text-blue-600">₪{summary.profit}</p></div>
             </div>
             <div className="flex gap-4 mb-6">
               <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="border rounded px-3 py-2">
@@ -1340,12 +1353,12 @@ const handleEditItem = (item) => {
               <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} className="border rounded px-3 py-2">
                 {years.map(y => <option key={y}>{y}</option>)}
               </select>
-              <button onClick={() => setShowAddTransaction(true)} className="bg-blue-500 text-white px-4 py-2 rounded">Add Transaction</button>
+              <button onClick={() => setShowAddTransaction(true)} className="bg-blue-500 text-white px-4 py-2 rounded">{t('admin.accounting.addTransaction')}</button>
             </div>
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-50">
-                  <tr><th className="px-6 py-3">Date</th><th className="px-6 py-3">Description</th><th className="px-6 py-3">Category</th><th className="px-6 py-3">Type</th><th className="px-6 py-3 text-right">Amount</th></tr>
+                  <tr><th className="px-6 py-3">{t('admin.inventory.date')}</th><th className="px-6 py-3">{t('admin.accounting.description')}</th><th className="px-6 py-3">{t('admin.accounting.category')}</th><th className="px-6 py-3">{t('admin.accounting.type')}</th><th className="px-6 py-3 text-right">{t('admin.inventory.quantity')}</th></tr>
                 </thead>
                 <tbody>
                   {transactions.map(t => (
@@ -1366,8 +1379,8 @@ const handleEditItem = (item) => {
         {/* USERS TAB */}
         {activeTab === 'users' && (
           <div className="bg-white rounded-lg shadow-lg p-6">
-            <div className="flex justify-between mb-6"><h2 className="text-2xl font-bold">User Management</h2><button onClick={() => setShowAddUser(true)} className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2"><UserPlus size={18} />Add User</button></div>
-            <div className="overflow-x-auto"><table className="w-full"><thead className="bg-gray-50"><tr><th className="px-6 py-3">Name</th><th className="px-6 py-3">Email</th><th className="px-6 py-3">Role</th><th className="px-6 py-3">Shift</th><th className="px-6 py-3">Actions</th></tr></thead>
+            <div className="flex justify-between mb-6"><h2 className="text-2xl font-bold">{t('admin.users.title')}</h2><button onClick={() => setShowAddUser(true)} className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2"><UserPlus size={18} />{t('admin.users.addNew')}</button></div>
+            <div className="overflow-x-auto"><table className="w-full"><thead className="bg-gray-50"><tr><th className="px-6 py-3">{t('admin.users.fullName')}</th><th className="px-6 py-3">{t('admin.users.email')}</th><th className="px-6 py-3">{t('admin.users.role')}</th><th className="px-6 py-3">{t('admin.users.shift')}</th><th className="px-6 py-3">{t('admin.users.actions')}</th></tr></thead>
           <tbody>
   {users.map(u => (
     <tr key={u.id} className="border-t">
@@ -1385,7 +1398,9 @@ const handleEditItem = (item) => {
           {u.role}
         </span>
       </td>
-      <td className="px-6 py-4">{u.shiftStart || '09:00'} - {u.shiftEnd || '17:00'}</td>
+      <td className="px-6 py-4">
+        {formatShiftTime(u.shiftStart)} - {formatShiftTime(u.shiftEnd)}
+      </td>
       <td className="px-6 py-4">
         <div className="flex gap-2">
           <button onClick={() => handleEditUserClick(u)} className="text-blue-600">
@@ -1403,26 +1418,26 @@ const handleEditItem = (item) => {
           </div>
         )}
       {/* Modals */}
-      {showAddUser && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">Add New User</h2><form onSubmit={handleAddUserSubmit}><input type="text" placeholder="Full Name" className="w-full border rounded px-3 py-2 mb-3" value={newUserData.name} onChange={e => setNewUserData({...newUserData, name: e.target.value})} required /><input type="email" placeholder="Email" className="w-full border rounded px-3 py-2 mb-3" value={newUserData.email} onChange={e => setNewUserData({...newUserData, email: e.target.value})} required /><input type="password" placeholder="Password" className="w-full border rounded px-3 py-2 mb-3" value={newUserData.password} onChange={e => setNewUserData({...newUserData, password: e.target.value})} required /><select className="w-full border rounded px-3 py-2 mb-3" value={newUserData.role} onChange={e => setNewUserData({...newUserData, role: e.target.value})}><option value={USER_ROLES.ADMIN}>Admin</option><option value={USER_ROLES.CASHIER}>Cashier</option><option value={USER_ROLES.CHEF}>Chef</option></select><div className="grid grid-cols-2 gap-3 mb-3"><input type="time" placeholder="Shift Start" className="border rounded px-3 py-2" value={newUserData.shiftStart} onChange={e => setNewUserData({...newUserData, shiftStart: e.target.value})} /><input type="time" placeholder="Shift End" className="border rounded px-3 py-2" value={newUserData.shiftEnd} onChange={e => setNewUserData({...newUserData, shiftEnd: e.target.value})} /></div><div className="flex justify-end gap-3"><button type="button" onClick={() => setShowAddUser(false)} className="px-4 py-2 border rounded">Cancel</button><button type="submit" disabled={submitting} className="px-4 py-2 bg-blue-500 text-white rounded">{submitting ? 'Creating...' : 'Create User'}</button></div></form></div></div>)}
+      {showAddUser && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.users.addNew')}</h2><form onSubmit={handleAddUserSubmit}><input type="text" placeholder={t('admin.users.fullName')} className="w-full border rounded px-3 py-2 mb-3" value={newUserData.name} onChange={e => setNewUserData({...newUserData, name: e.target.value})} required /><input type="email" placeholder={t('admin.users.email')} className="w-full border rounded px-3 py-2 mb-3" value={newUserData.email} onChange={e => setNewUserData({...newUserData, email: e.target.value})} required /><input type="password" placeholder={t('admin.users.password')} className="w-full border rounded px-3 py-2 mb-3" value={newUserData.password} onChange={e => setNewUserData({...newUserData, password: e.target.value})} required /><select className="w-full border rounded px-3 py-2 mb-3" value={newUserData.role} onChange={e => setNewUserData({...newUserData, role: e.target.value})}><option value={USER_ROLES.ADMIN}>Admin</option><option value={USER_ROLES.CASHIER}>Cashier</option><option value={USER_ROLES.CHEF}>Chef</option></select><div className="grid grid-cols-2 gap-3 mb-3"><input type="time" placeholder={t('admin.users.shiftStart')} className="border rounded px-3 py-2" value={newUserData.shiftStart} onChange={e => setNewUserData({...newUserData, shiftStart: e.target.value})} /><input type="time" placeholder={t('admin.users.shiftEnd')} className="border rounded px-3 py-2" value={newUserData.shiftEnd} onChange={e => setNewUserData({...newUserData, shiftEnd: e.target.value})} /></div><div className="flex justify-end gap-3"><button type="button" onClick={() => setShowAddUser(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button type="submit" disabled={submitting} className="px-4 py-2 bg-blue-500 text-white rounded">{submitting ? t('admin.users.creating') : t('admin.users.createUser')}</button></div></form></div></div>)}
 
-      {showEditUser && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">Edit User</h2><form onSubmit={handleUpdateUser}><input type="text" placeholder="Full Name" className="w-full border rounded px-3 py-2 mb-3" value={editUserData.name} onChange={e => setEditUserData({...editUserData, name: e.target.value})} required /><select className="w-full border rounded px-3 py-2 mb-3" value={editUserData.role} onChange={e => setEditUserData({...editUserData, role: e.target.value})}><option value={USER_ROLES.ADMIN}>Admin</option><option value={USER_ROLES.CASHIER}>Cashier</option><option value={USER_ROLES.CHEF}>Chef</option></select><div className="grid grid-cols-2 gap-3 mb-3"><input type="time" className="border rounded px-3 py-2" value={editUserData.shiftStart} onChange={e => setEditUserData({...editUserData, shiftStart: e.target.value})} /><input type="time" className="border rounded px-3 py-2" value={editUserData.shiftEnd} onChange={e => setEditUserData({...editUserData, shiftEnd: e.target.value})} /></div><div className="flex justify-end gap-3"><button type="button" onClick={() => setShowEditUser(false)} className="px-4 py-2 border rounded">Cancel</button><button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">Update</button></div></form></div></div>)}
+      {showEditUser && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.users.edit')}</h2><form onSubmit={handleUpdateUser}><input type="text" placeholder={t('admin.users.fullName')} className="w-full border rounded px-3 py-2 mb-3" value={editUserData.name} onChange={e => setEditUserData({...editUserData, name: e.target.value})} required /><select className="w-full border rounded px-3 py-2 mb-3" value={editUserData.role} onChange={e => setEditUserData({...editUserData, role: e.target.value})}><option value={USER_ROLES.ADMIN}>Admin</option><option value={USER_ROLES.CASHIER}>Cashier</option><option value={USER_ROLES.CHEF}>Chef</option></select><div className="grid grid-cols-2 gap-3 mb-3"><input type="time" className="border rounded px-3 py-2" value={editUserData.shiftStart} onChange={e => setEditUserData({...editUserData, shiftStart: e.target.value})} /><input type="time" className="border rounded px-3 py-2" value={editUserData.shiftEnd} onChange={e => setEditUserData({...editUserData, shiftEnd: e.target.value})} /></div><div className="flex justify-end gap-3"><button type="button" onClick={() => setShowEditUser(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">{t('admin.common.update')}</button></div></form></div></div>)}
 
-      {showAddPurchase && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">Add Purchase</h2><input type="text" placeholder="Item Name (e.g., Chicken Meat)" className="w-full border rounded px-3 py-2 mb-3" value={purchaseForm.itemName} onChange={e => setPurchaseForm({...purchaseForm, itemName: e.target.value})} /><input type="number" placeholder="Quantity (kg)" className="w-full border rounded px-3 py-2 mb-3" value={purchaseForm.quantity} onChange={e => setPurchaseForm({...purchaseForm, quantity: e.target.value})} /><input type="number" placeholder="Price per kg" className="w-full border rounded px-3 py-2 mb-3" value={purchaseForm.price} onChange={e => setPurchaseForm({...purchaseForm, price: e.target.value})} /><input type="text" placeholder="Supplier (optional)" className="w-full border rounded px-3 py-2 mb-4" value={purchaseForm.supplier} onChange={e => setPurchaseForm({...purchaseForm, supplier: e.target.value})} /><div className="flex justify-end gap-3"><button onClick={() => setShowAddPurchase(false)} className="px-4 py-2 border rounded">Cancel</button><button onClick={savePurchase} className="px-4 py-2 bg-blue-500 text-white rounded">Add Purchase</button></div></div></div>)}
+      {showAddPurchase && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.inventory.addPurchase')}</h2><input type="text" placeholder={t('admin.inventory.itemName')} className="w-full border rounded px-3 py-2 mb-3" value={purchaseForm.itemName} onChange={e => setPurchaseForm({...purchaseForm, itemName: e.target.value})} /><input type="number" placeholder={t('admin.inventory.quantity')} className="w-full border rounded px-3 py-2 mb-3" value={purchaseForm.quantity} onChange={e => setPurchaseForm({...purchaseForm, quantity: e.target.value})} /><input type="number" placeholder={t('admin.inventory.price')} className="w-full border rounded px-3 py-2 mb-3" value={purchaseForm.price} onChange={e => setPurchaseForm({...purchaseForm, price: e.target.value})} /><input type="text" placeholder={t('admin.inventory.supplier')} className="w-full border rounded px-3 py-2 mb-4" value={purchaseForm.supplier} onChange={e => setPurchaseForm({...purchaseForm, supplier: e.target.value})} /><div className="flex justify-end gap-3"><button onClick={() => setShowAddPurchase(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button onClick={savePurchase} className="px-4 py-2 bg-blue-500 text-white rounded">{t('admin.inventory.addPurchase')}</button></div></div></div>)}
 
-      {showAddSalary && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">Record Salary</h2><input type="text" placeholder="Employee Name" className="w-full border rounded px-3 py-2 mb-3" value={salaryData.employeeName} onChange={e => setSalaryData({...salaryData, employeeName: e.target.value})} /><input type="number" placeholder="Amount" className="w-full border rounded px-3 py-2 mb-3" value={salaryData.amount} onChange={e => setSalaryData({...salaryData, amount: e.target.value})} /><select className="w-full border rounded px-3 py-2 mb-3" value={salaryData.month} onChange={e => setSalaryData({...salaryData, month: parseInt(e.target.value)})}>{months.map((m,i) => <option key={i} value={i+1}>{m}</option>)}</select><select className="w-full border rounded px-3 py-2 mb-4" value={salaryData.year} onChange={e => setSalaryData({...salaryData, year: parseInt(e.target.value)})}>{years.map(y => <option key={y}>{y}</option>)}</select><div className="flex justify-end gap-3"><button onClick={() => setShowAddSalary(false)} className="px-4 py-2 border rounded">Cancel</button><button onClick={saveSalary} className="px-4 py-2 bg-green-500 text-white rounded">Record</button></div></div></div>)}
+      {showAddSalary && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.salaries.addSalary')}</h2><input type="text" placeholder={t('admin.salaries.employeeName')} className="w-full border rounded px-3 py-2 mb-3" value={salaryData.employeeName} onChange={e => setSalaryData({...salaryData, employeeName: e.target.value})} /><input type="number" placeholder={t('admin.salaries.amount')} className="w-full border rounded px-3 py-2 mb-3" value={salaryData.amount} onChange={e => setSalaryData({...salaryData, amount: e.target.value})} /><select className="w-full border rounded px-3 py-2 mb-3" value={salaryData.month} onChange={e => setSalaryData({...salaryData, month: parseInt(e.target.value)})}>{months.map((m,i) => <option key={i} value={i+1}>{m}</option>)}</select><select className="w-full border rounded px-3 py-2 mb-4" value={salaryData.year} onChange={e => setSalaryData({...salaryData, year: parseInt(e.target.value)})}>{years.map(y => <option key={y}>{y}</option>)}</select><div className="flex justify-end gap-3"><button onClick={() => setShowAddSalary(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button onClick={saveSalary} className="px-4 py-2 bg-green-500 text-white rounded">{t('admin.common.save')}</button></div></div></div>)}
 
-      {showAddTransaction && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">Add Transaction</h2><select className="w-full border rounded px-3 py-2 mb-3" value={newTransaction.type} onChange={e => setNewTransaction({...newTransaction, type: e.target.value})}><option value="expense">Expense</option><option value="income">Income</option></select><input type="number" placeholder="Amount" className="w-full border rounded px-3 py-2 mb-3" value={newTransaction.amount} onChange={e => setNewTransaction({...newTransaction, amount: e.target.value})} /><input type="text" placeholder="Description" className="w-full border rounded px-3 py-2 mb-3" value={newTransaction.description} onChange={e => setNewTransaction({...newTransaction, description: e.target.value})} /><input type="text" placeholder="Category" className="w-full border rounded px-3 py-2 mb-4" value={newTransaction.category} onChange={e => setNewTransaction({...newTransaction, category: e.target.value})} /><div className="flex justify-end gap-3"><button onClick={() => setShowAddTransaction(false)} className="px-4 py-2 border rounded">Cancel</button><button onClick={async (e) => { e.preventDefault(); await addTransaction({...newTransaction, amount: parseFloat(newTransaction.amount)}); toast.success('Added'); setShowAddTransaction(false); loadAccountingData(); }} className="px-4 py-2 bg-blue-500 text-white rounded">Add</button></div></div></div>)}
+      {showAddTransaction && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.accounting.addTransaction')}</h2><select className="w-full border rounded px-3 py-2 mb-3" value={newTransaction.type} onChange={e => setNewTransaction({...newTransaction, type: e.target.value})}><option value="expense">{t('admin.accounting.expenses')}</option><option value="income">{t('admin.accounting.income')}</option></select><input type="number" placeholder={t('admin.salaries.amount')} className="w-full border rounded px-3 py-2 mb-3" value={newTransaction.amount} onChange={e => setNewTransaction({...newTransaction, amount: e.target.value})} /><input type="text" placeholder={t('admin.accounting.description')} className="w-full border rounded px-3 py-2 mb-3" value={newTransaction.description} onChange={e => setNewTransaction({...newTransaction, description: e.target.value})} /><input type="text" placeholder={t('admin.accounting.category')} className="w-full border rounded px-3 py-2 mb-4" value={newTransaction.category} onChange={e => setNewTransaction({...newTransaction, category: e.target.value})} /><div className="flex justify-end gap-3"><button onClick={() => setShowAddTransaction(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button onClick={async (e) => { e.preventDefault(); await addTransaction({...newTransaction, amount: parseFloat(newTransaction.amount)}); toast.success(t('admin.common.success')); setShowAddTransaction(false); loadAccountingData(); }} className="px-4 py-2 bg-blue-500 text-white rounded">{t('admin.common.save')}</button></div></div></div>)}
 
       {/* Edit Item Modal */}
 {/* Edit Item Modal - Add preparation time field */}
 {showEditModal && (
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
     <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-      <h2 className="text-2xl font-bold mb-4">{editingItem ? 'Edit Item' : 'Add Item'}</h2>
+      <h2 className="text-2xl font-bold mb-4">{editingItem ? t('admin.common.edit') : t('admin.inventory.addPurchase')}</h2>
       <form onSubmit={(e) => { e.preventDefault(); handleSaveItem(); }}>
         <input 
           type="text" 
-          placeholder="Item Name" 
+          placeholder={t('admin.inventory.itemName')} 
           className="w-full border rounded px-3 py-2 mb-3" 
           value={editForm.name} 
           onChange={e => setEditForm({...editForm, name: e.target.value})} 
@@ -1431,7 +1446,7 @@ const handleEditItem = (item) => {
         
         <input 
           type="number" 
-          placeholder="Price" 
+          placeholder={t('admin.inventory.price')} 
           className="w-full border rounded px-3 py-2 mb-3" 
           value={editForm.price} 
           onChange={e => setEditForm({...editForm, price: e.target.value})} 
@@ -1440,7 +1455,7 @@ const handleEditItem = (item) => {
         
         <input 
           type="text" 
-          placeholder="Weight (e.g., 250g)" 
+          placeholder={t('admin.inventory.unit')} 
           className="w-full border rounded px-3 py-2 mb-3" 
           value={editForm.weight} 
           onChange={e => setEditForm({...editForm, weight: e.target.value})} 
@@ -1486,7 +1501,7 @@ const handleEditItem = (item) => {
         
         <input 
           type="text" 
-          placeholder="Or Image URL/Emoji" 
+          placeholder={t('admin.inventory.itemName')} 
           className="w-full border rounded px-3 py-2 mb-3" 
           value={editForm.image} 
           onChange={e => setEditForm({...editForm, image: e.target.value})} 
@@ -1518,9 +1533,9 @@ const handleEditItem = (item) => {
         </label>
         
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 border rounded">Cancel</button>
+          <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button>
           <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
-            {editingItem ? 'Update' : 'Add'}
+            {editingItem ? t('admin.common.update') : t('admin.common.save')}
           </button>
         </div>
       </form>
