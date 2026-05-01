@@ -9,8 +9,7 @@ import {
   where, 
   orderBy,
   onSnapshot,
-  deleteDoc,
-  getDoc
+  deleteDoc
 } from 'firebase/firestore';
 
 // ==================== ORDERS ====================
@@ -345,6 +344,65 @@ export const subscribeToAllOrders = (callback) => {
   });
 };
 
+// ==================== PURCHASES / INVENTORY ====================
+
+// Add new purchase
+export const addPurchase = async (purchaseData) => {
+  try {
+    const purchasesRef = collection(db, 'purchases');
+    const newPurchase = {
+      ...purchaseData,
+      createdAt: new Date().toISOString(),
+      date: purchaseData.date || new Date().toISOString()
+    };
+    const docRef = await addDoc(purchasesRef, newPurchase);
+    
+    // Also record as an expense in transactions
+    await addTransaction({
+      type: 'expense',
+      amount: purchaseData.totalCost || (purchaseData.quantity * purchaseData.price),
+      description: `Purchase: ${purchaseData.itemName}`,
+      category: 'inventory',
+      createdAt: new Date().toISOString()
+    });
+    
+    return { id: docRef.id, ...newPurchase };
+  } catch (error) {
+    console.error('Error adding purchase:', error);
+    throw error;
+  }
+};
+
+// Get all purchases
+export const getPurchases = async () => {
+  try {
+    const purchasesRef = collection(db, 'purchases');
+    const q = query(purchasesRef, orderBy('date', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error fetching purchases:', error);
+    throw error;
+  }
+};
+
+// Subscribe to purchases
+export const subscribeToPurchases = (callback) => {
+  const purchasesRef = collection(db, 'purchases');
+  const q = query(purchasesRef, orderBy('date', 'desc'));
+  
+  return onSnapshot(q, (snapshot) => {
+    const purchases = [];
+    snapshot.forEach(doc => {
+      purchases.push({ id: doc.id, ...doc.data() });
+    });
+    callback(purchases);
+  }, (error) => {
+    console.error('Error fetching purchases:', error);
+    callback([]);
+  });
+};
+
 // Subscribe to transactions (real-time updates)
 export const subscribeToTransactions = (callback) => {
   const transactionsRef = collection(db, 'transactions');
@@ -360,4 +418,4 @@ export const subscribeToTransactions = (callback) => {
     console.error('Error fetching transactions:', error);
     callback([]);
   });
-};
+};
