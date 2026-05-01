@@ -67,10 +67,14 @@ export const getAllOrders = async () => {
 export const updateOrderStatus = async (orderId, status) => {
   try {
     const orderRef = doc(db, 'orders', orderId);
-    await updateDoc(orderRef, { 
+    const updateData = { 
       status, 
       updatedAt: new Date().toISOString() 
-    });
+    };
+    if (status === 'completed') {
+      updateData.completedAt = new Date().toISOString();
+    }
+    await updateDoc(orderRef, updateData);
     return { success: true };
   } catch (error) {
     console.error('Error updating order:', error);

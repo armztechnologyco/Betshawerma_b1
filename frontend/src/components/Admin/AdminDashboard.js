@@ -121,8 +121,12 @@ function AdminDashboard({ initialTab = 'overview' }) {
 
   // Reports state
   const [reportData, setReportData] = useState([]);
-  const [reportFilter, setReportFilter] = useState({ fromDate: '', toDate: '', status: 'all' });
+  const [reportFilter, setReportFilter] = useState(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return { fromDate: today, toDate: today, status: 'all' };
+  });
   const [showReport, setShowReport] = useState(false);
+  const [selectedReportOrder, setSelectedReportOrder] = useState(null);
 
   // User form state
   const [showAddUser, setShowAddUser] = useState(false);
@@ -173,6 +177,9 @@ function AdminDashboard({ initialTab = 'overview' }) {
     }
     if (activeTab === 'purchases') {
       calculateInventory();
+    }
+    if (activeTab === 'reports') {
+      generateReport();
     }
   }, [activeTab, selectedMonth, selectedYear, purchases]);
 
@@ -800,10 +807,41 @@ const handleEditItem = (item) => {
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">{t('admin.overview.totalSales')}</h3><p className="text-3xl font-bold text-green-600">₪{stats.todayRevenue || 0}</p></div>
-            <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">{t('admin.overview.totalOrders')}</h3><p className="text-3xl font-bold text-blue-600">{stats.totalOrdersToday || 0}</p></div>
-            <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">{t('admin.overview.pendingOrders')}</h3><p className="text-3xl font-bold text-orange-600">{(stats.pendingOrders || 0) + (stats.preparingOrders || 0)}</p></div>
-            <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">{t('admin.users.title')}</h3><p className="text-3xl font-bold text-purple-600">{users.length}</p></div>
+            <div 
+              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all"
+              onClick={() => setActiveTab('reports')}
+            >
+              <h3 className="text-lg font-semibold text-gray-700">{t('admin.overview.totalSales')}</h3>
+              <p className="text-3xl font-bold text-green-600 mt-2">₪{stats.todayRevenue || 0}</p>
+              <p className="text-xs text-gray-400 mt-2">Click to view details</p>
+            </div>
+            
+            <div 
+              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all"
+              onClick={() => setActiveTab('reports')}
+            >
+              <h3 className="text-lg font-semibold text-gray-700">{t('admin.overview.totalOrders')}</h3>
+              <p className="text-3xl font-bold text-blue-600 mt-2">{stats.totalOrdersToday || 0}</p>
+              <p className="text-xs text-gray-400 mt-2">Click to view details</p>
+            </div>
+            
+            <div 
+              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all"
+              onClick={() => setActiveTab('kitchen')}
+            >
+              <h3 className="text-lg font-semibold text-gray-700">{t('admin.overview.pendingOrders')}</h3>
+              <p className="text-3xl font-bold text-orange-600 mt-2">{(stats.pendingOrders || 0) + (stats.preparingOrders || 0)}</p>
+              <p className="text-xs text-gray-400 mt-2">Click to view kitchen</p>
+            </div>
+            
+            <div 
+              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all"
+              onClick={() => setActiveTab('users')}
+            >
+              <h3 className="text-lg font-semibold text-gray-700">{t('admin.users.title')}</h3>
+              <p className="text-3xl font-bold text-purple-600 mt-2">{users.length}</p>
+              <p className="text-xs text-gray-400 mt-2">Click to manage users</p>
+            </div>
           </div>
         )}
 
@@ -1324,11 +1362,11 @@ const handleEditItem = (item) => {
                 </div>
                 <table className="w-full">
                   <thead className="bg-gray-50">
-                    <tr><th className="px-6 py-3">{t('cashier.receipt.orderNumber')}</th><th className="px-6 py-3">{t('admin.inventory.date')}</th><th className="px-6 py-3">{t('admin.users.fullName')}</th><th className="px-6 py-3">{t('admin.tabs.menu')}</th><th className="px-6 py-3">{t('admin.inventory.total')}</th><th className="px-6 py-3">{t('admin.reports.status')}</th></tr>
+                    <tr><th className="px-6 py-3">{t('cashier.receipt.orderNumber')}</th><th className="px-6 py-3">{t('admin.inventory.date')}</th><th className="px-6 py-3">{t('admin.users.fullName')}</th><th className="px-6 py-3">{t('admin.tabs.menu')}</th><th className="px-6 py-3">{t('admin.inventory.total')}</th><th className="px-6 py-3">{t('admin.reports.status')}</th><th className="px-6 py-3">Timing</th></tr>
                   </thead>
                   <tbody>
                     {reportData.map(order => (
-                      <tr key={order.id} className="border-t">
+                      <tr key={order.id} className="border-t hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setSelectedReportOrder(order)}>
                         <td className="px-6 py-4">#{order.orderNumber}</td>
                         <td className="px-6 py-4">{new Date(order.createdAt).toLocaleDateString()}</td>
                         <td className="px-6 py-4">{order.customerName}</td>
@@ -1338,6 +1376,26 @@ const handleEditItem = (item) => {
                           <span className={`px-2 py-1 rounded text-xs ${order.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                             {order.status}
                           </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {(() => {
+                            const expected = order.items?.reduce((total, item) => total + ((item.preparationTime || 5) * item.quantity), 0) || 5;
+                            const actual = order.completedAt 
+                              ? (new Date(order.completedAt) - new Date(order.createdAt)) / (1000 * 60)
+                              : (new Date() - new Date(order.createdAt)) / (1000 * 60);
+                            
+                            const isDelayed = actual > expected;
+                            
+                            if (order.status === 'completed') {
+                              return (
+                                <span className={`px-2 py-1 rounded text-xs font-bold ${isDelayed ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                                  {isDelayed ? `Delayed (${Math.round(actual - expected)}m)` : 'On Time'}
+                                </span>
+                              );
+                            } else {
+                              return isDelayed ? <span className="text-red-500 font-bold animate-pulse text-xs">Delayed</span> : <span className="text-gray-400 text-xs">In Progress</span>;
+                            }
+                          })()}
                         </td>
                       </tr>
                     ))}
@@ -1563,6 +1621,90 @@ const handleEditItem = (item) => {
     </div>
   </div>
 )}
+
+      {/* Order Details Modal for Reports */}
+      {selectedReportOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto m-4 shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Order #{selectedReportOrder.orderNumber}</h2>
+              <button onClick={() => setSelectedReportOrder(null)} className="text-gray-500 hover:text-red-500 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-6 text-sm bg-gray-50 p-4 rounded-lg">
+              <div>
+                <p className="text-gray-500 font-medium">Date & Time</p>
+                <p className="font-semibold text-gray-800">{new Date(selectedReportOrder.createdAt).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 font-medium">Customer</p>
+                <p className="font-semibold text-gray-800">{selectedReportOrder.customerName || 'Walk-in'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 font-medium">Status</p>
+                <p className="font-medium mt-1">
+                  <span className={`px-2 py-1 rounded text-xs ${selectedReportOrder.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                    {selectedReportOrder.status}
+                  </span>
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 font-medium">Total Amount</p>
+                <p className="font-bold text-lg text-green-600">₪{selectedReportOrder.total}</p>
+              </div>
+              <div className="col-span-2 border-t pt-2 mt-2">
+                <p className="text-gray-500 font-medium">Timing Analysis</p>
+                {(() => {
+                  const expected = selectedReportOrder.items?.reduce((total, item) => total + ((item.preparationTime || 5) * item.quantity), 0) || 5;
+                  const actual = selectedReportOrder.completedAt 
+                    ? (new Date(selectedReportOrder.completedAt) - new Date(selectedReportOrder.createdAt)) / (1000 * 60)
+                    : (new Date() - new Date(selectedReportOrder.createdAt)) / (1000 * 60);
+                  
+                  const isDelayed = actual > expected;
+                  
+                  return (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${isDelayed ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                        {isDelayed ? 'Delayed' : 'On Time'}
+                      </span>
+                      <span className="text-xs text-gray-600">
+                        (Expected: {expected}m | Actual: {Math.round(actual)}m)
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+            
+            <h3 className="font-bold text-lg border-b pb-2 mb-4 text-gray-700">Order Items</h3>
+            <div className="space-y-3 mb-6">
+              {selectedReportOrder.items?.map((item, idx) => (
+                <div key={idx} className="flex justify-between items-center bg-white border border-gray-100 shadow-sm p-3 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <span className="bg-orange-100 text-orange-800 px-3 py-1.5 rounded-md text-sm font-bold">{item.quantity}x</span>
+                    <div>
+                      <p className="font-bold text-gray-800">{item.name}</p>
+                      {item.includes && <p className="text-xs text-gray-500 mt-1">{item.includes}</p>}
+                    </div>
+                  </div>
+                  <span className="font-bold text-gray-700">₪{(item.price * item.quantity).toFixed(2)}</span>
+                </div>
+              ))}
+              {(!selectedReportOrder.items || selectedReportOrder.items.length === 0) && (
+                <p className="text-gray-500 text-center py-4">No items details available.</p>
+              )}
+            </div>
+            
+            <div className="flex justify-end pt-4 border-t">
+              <button onClick={() => setSelectedReportOrder(null)} className="px-6 py-2 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 transition-colors">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
