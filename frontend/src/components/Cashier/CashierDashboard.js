@@ -138,7 +138,7 @@
 // //       toast.error(`${item.name} is currently unavailable`);
 // //       return;
 // //     }
-    
+
 // //     if (item.category === 'shawarma' || item.category === 'plates' || item.category === 'sandwiches') {
 // //       setSelectedItem(item);
 // //       setCustomizations({ extras: [], notes: '', quantity: 1 });
@@ -158,10 +158,10 @@
 
 // //   const addCustomizedToCart = () => {
 // //     if (!selectedItem) return;
-    
+
 // //     const extrasTotal = customizations.extras.reduce((sum, extra) => sum + extra.price, 0);
 // //     const itemTotal = (selectedItem.basePrice + extrasTotal) * customizations.quantity;
-    
+
 // //     const cartItem = {
 // //       ...selectedItem,
 // //       quantity: customizations.quantity,
@@ -171,7 +171,7 @@
 // //       basePrice: selectedItem.basePrice,
 // //       extrasTotal: extrasTotal
 // //     };
-    
+
 // //     setCart([...cart, cartItem]);
 // //     toast.success(`${customizations.quantity}x ${selectedItem.name} added to cart`);
 // //     setShowCustomizeModal(false);
@@ -236,9 +236,9 @@
 // //         createdAt: new Date().toISOString()
 // //       };
 // //       await addDoc(ordersRef, newOrder);
-      
+
 // //       toast.success(`Order #${newOrder.orderNumber} created successfully!`);
-      
+
 // //       const transactionsRef = collection(db, 'transactions');
 // //       await addDoc(transactionsRef, {
 // //         type: 'income',
@@ -247,7 +247,7 @@
 // //         category: 'sales',
 // //         createdAt: new Date().toISOString()
 // //       });
-      
+
 // //       setCart([]);
 // //       setCustomerName('');
 // //     } catch (error) {
@@ -262,7 +262,7 @@
 // //   const handleAddOrUpdateItem = async (formData, imageFile) => {
 // //     let imageUrl = formData.imageUrl || formData.image;
 // //     let imagePath = formData.imagePath;
-    
+
 // //     if (imageFile) {
 // //       setUploading(true);
 // //       const uploadResult = await uploadImage(formData.id || Date.now(), imageFile);
@@ -277,14 +277,14 @@
 // //       }
 // //       setUploading(false);
 // //     }
-    
+
 // //     const updatedItem = { 
 // //       ...formData, 
 // //       image: imageUrl || formData.image,
 // //       imageUrl: imageUrl || formData.imageUrl,
 // //       imagePath: imagePath || formData.imagePath
 // //     };
-    
+
 // //     if (editingItem) {
 // //       // Update existing item
 // //       const category = formData.category;
@@ -310,7 +310,7 @@
 // //       localStorage.setItem('menuItems', JSON.stringify(updatedMenu));
 // //       toast.success('Item added successfully!');
 // //     }
-    
+
 // //     setShowMenuModal(false);
 // //     setEditingItem(null);
 // //     setImagePreview(null);
@@ -321,7 +321,7 @@
 // //       if (imagePath) {
 // //         await deleteImage(imagePath);
 // //       }
-      
+
 // //       const updatedMenu = {
 // //         ...sampleMenu,
 // //         [category]: sampleMenu[category].filter(item => item.id !== itemId)
@@ -409,7 +409,7 @@
 // //                             <ImageIcon size={32} className="text-gray-400" />
 // //                           </div>
 // //                         )}
-                        
+
 // //                         <h4 className="font-semibold text-lg">{item.name}</h4>
 // //                         <p className="text-gray-600">₪{item.price}</p>
 // //                         <p className="text-sm text-gray-500">{item.weight}</p>
@@ -443,7 +443,7 @@
 // //           ))}
 // //         </div>
 // //       )}
-      
+
 // //       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 // //         {/* Menu Section */}
 // //         <div className="lg:col-span-2">
@@ -490,7 +490,7 @@
 // //                       <ImageIcon size={32} className="text-gray-400" />
 // //                     </div>
 // //                   )}
-                  
+
 // //                   <h3 className="font-semibold text-lg">{item.name}</h3>
 // //                   <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
 // //                     <Scale size={14} />
@@ -524,7 +524,7 @@
 // //               <ShoppingCart className="mr-2" />
 // //               <h2 className="text-2xl font-bold">Current Order</h2>
 // //             </div>
-            
+
 // //             <div className="mb-4">
 // //               <label className="block text-sm font-medium mb-2">Customer Name</label>
 // //               <input
@@ -943,8 +943,8 @@
 //     window.removeEventListener('storage', handleStorageChange);
 //   };
 // }, []);
- 
- 
+
+
 //   const uploadImage = async (id, file) => {
 //     try {
 //       const imageRef = ref(storage, `menu/${id}_${Date.now()}_${file.name}`);
@@ -1157,11 +1157,12 @@
 
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { 
-  ShoppingCart, Plus, Minus, Trash2, 
-  Coffee, Beef, Sandwich, Salad, 
-  Flame, Droplet, X, Edit2, Trash2 as TrashIcon,
+import {
+  ShoppingCart, Plus, Minus, Trash2,
+  Coffee, Beef, Sandwich, Salad,
+  Droplet, X, Edit2, Trash2 as TrashIcon,
   Scale, DollarSign, Lock, Unlock, Upload, Image as ImageIcon
 } from 'lucide-react';
 import { db, storage } from '../../firebase';
@@ -1170,10 +1171,15 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { subscribeToMenu, addMenuItem, updateMenuItem, deleteMenuItem } from '../../services/menuService';
 
 function CashierDashboard({ userRole }) {
+  const { t } = useTranslation();
   const [cart, setCart] = useState([]);
+  const [receiptData, setReceiptData] = useState(null);
   const [customerName, setCustomerName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [orderType, setOrderType] = useState('takeaway');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [activeTab, setActiveTab] = useState('shawarma');
+  const [amountReceived, setAmountReceived] = useState('');
   const [menuItems, setMenuItems] = useState({
     shawarma: [],
     plates: [],
@@ -1201,11 +1207,11 @@ function CashierDashboard({ userRole }) {
 
   // Tab configuration
   const tabs = [
-    { id: 'shawarma', name: 'Shawarma', icon: Beef, color: 'bg-red-500' },
-    { id: 'plates', name: 'Plates', icon: Salad, color: 'bg-green-500' },
-    { id: 'sandwiches', name: 'Sandwiches', icon: Sandwich, color: 'bg-orange-500' },
-    { id: 'sides', name: 'Sides', icon: Coffee, color: 'bg-purple-500' },
-    { id: 'drinks', name: 'Drinks', icon: Droplet, color: 'bg-blue-500' }
+    { id: 'shawarma', name: t('cashier.categories.shawarma'), icon: Beef, color: 'bg-red-500' },
+    { id: 'plates', name: t('cashier.categories.plates'), icon: Salad, color: 'bg-green-500' },
+    { id: 'sandwiches', name: t('cashier.categories.sandwiches'), icon: Sandwich, color: 'bg-orange-500' },
+    { id: 'sides', name: t('cashier.categories.sides'), icon: Coffee, color: 'bg-purple-500' },
+    { id: 'drinks', name: t('cashier.categories.drinks'), icon: Droplet, color: 'bg-blue-500' }
   ];
 
   // Available extras
@@ -1227,7 +1233,7 @@ function CashierDashboard({ userRole }) {
       setMenuItems(data);
       setLoading(false);
     });
-    
+
     return () => unsubscribe();
   }, []);
 
@@ -1262,7 +1268,7 @@ function CashierDashboard({ userRole }) {
       toast.error(`${item.name} is currently unavailable`);
       return;
     }
-    
+
     if (item.category === 'shawarma' || item.category === 'plates' || item.category === 'sandwiches') {
       setSelectedItem(item);
       setCustomizations({ extras: [], notes: '', quantity: 1 });
@@ -1282,10 +1288,10 @@ function CashierDashboard({ userRole }) {
 
   const addCustomizedToCart = () => {
     if (!selectedItem) return;
-    
+
     const extrasTotal = customizations.extras.reduce((sum, extra) => sum + extra.price, 0);
     const itemTotal = (selectedItem.basePrice + extrasTotal) * customizations.quantity;
-    
+
     const cartItem = {
       ...selectedItem,
       quantity: customizations.quantity,
@@ -1295,7 +1301,7 @@ function CashierDashboard({ userRole }) {
       basePrice: selectedItem.basePrice,
       extrasTotal: extrasTotal
     };
-    
+
     setCart([...cart, cartItem]);
     toast.success(`${customizations.quantity}x ${selectedItem.name} added to cart`);
     setShowCustomizeModal(false);
@@ -1326,8 +1332,170 @@ function CashierDashboard({ userRole }) {
     });
   };
 
-  const calculateTotal = () => {
-    return cart.reduce((total, item) => total + (item.totalPrice || item.price * item.quantity), 0);
+  const calculateTotals = () => {
+    const subtotal = cart.reduce((total, item) => total + (item.totalPrice || item.price * item.quantity), 0);
+    const vat = subtotal * 0.14;
+    const service = orderType === 'dinein' ? subtotal * 0.12 : 0;
+    const total = subtotal + vat + service;
+    return { subtotal, vat, service, total };
+  };
+
+  // const printReceipt = (order) => {
+  //   try {
+  //     console.log('Attempting to print receipt for order:', order);
+  //     const { subtotal, vat, service, total } = order.totals;
+
+  //     const receiptWindow = window.open('', 'PRINT', 'height=800,width=400');
+
+  //     if (!receiptWindow) {
+  //       console.error('Failed to open receipt window. Pop-up blocker might be active.');
+  //       toast.error('Please allow pop-ups to print receipts');
+  //       return;
+  //     }
+
+  //     const html = `
+  //     <html>
+  //       <head>
+  //         <style>
+  //           body { font-family: 'Courier New', monospace; padding: 20px; text-align: center; direction: rtl; }
+  //           .header { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; display: flex; flex-direction: column; align-items: center; }
+  //           .logo { width: 50px; height: 50px; margin-bottom: 5px; }
+  //           .item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; text-align: right; }
+  //           .info { text-align: right; margin-bottom: 10px; font-size: 12px; }
+  //           .total { border-top: 1px dashed #000; margin-top: 10px; padding-top: 10px; font-weight: bold; }
+  //           .summary-item { display: flex; justify-content: space-between; margin-bottom: 3px; text-align: right; }
+  //           .footer { margin-top: 20px; font-size: 12px; }
+  //           .qr-code { width: 80px; height: 80px; margin-top: 10px; }
+  //         </style>
+  //       </head>
+  //       <body>
+  //         <div class="header">
+  //           <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  //             <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path>
+  //             <path d="M7 2v20"></path>
+  //             <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>
+  //           </svg>
+  //           <h2 style="margin: 5px 0;">Betshawerma</h2>
+  //           <p style="font-size:12px; margin:2px 0;">19300 :الخط الساخن</p>
+  //           <p style="font-size:12px; margin:2px 0;">55689 :سجل تجاري</p>
+  //           <p style="font-size:12px; margin:2px 0;">5-967-522 :بطاقة ضريبية</p>
+  //           <p style="font-size:12px; margin:2px 0; margin-top:5px;">${new Date(order.createdAt).toLocaleString()}</p>
+  //         </div>
+  //         <div class="info">
+  //           <div><strong>الكاشير:</strong> ${order.cashierName || 'Cashier'}</div>
+  //           <div><strong>رقم الطلب:</strong> #${order.orderNumber}</div>
+  //           <div><strong>نوع الطلب:</strong> ${order.orderType === 'dinein' ? 'Dine In' : 'Take Away'}</div>
+  //           <div><strong>طريقة الدفع:</strong> ${order.paymentMethod}</div>
+  //         </div>
+  //         <div style="border-bottom: 1px dashed #000; margin-bottom: 10px;"></div>
+
+  //         <div>${order.items.map(item => {
+  //       return `<div class="item"><span>${item.quantity}x ${item.name}</span><span>₪${item.total.toFixed(2)}</span></div>`;
+  //     }).join('')}</div>
+
+  //         <div class="total">
+  //           <div class="summary-item" style="font-weight:normal;"><span>المجموع الفرعي:</span><span>₪${subtotal.toFixed(2)}</span></div>
+  //           <div class="summary-item" style="font-weight:normal;"><span>ضريبة القيمة المضافة (14%):</span><span>₪${vat.toFixed(2)}</span></div>
+  //           ${order.orderType === 'dinein' ? `<div class="summary-item" style="font-weight:normal;"><span>الخدمة (12%):</span><span>₪${service.toFixed(2)}</span></div>` : ''}
+  //           <div class="summary-item" style="font-size: 18px; margin-top: 5px;"><span>الإجمالي المستحق:</span><span>₪${total.toFixed(2)}</span></div>
+  //         </div>
+
+  //         <div class="footer">
+  //           <p>شكرا لزيارتكم!</p>
+  //           <p style="margin: 5px 0;">امسح الكود لرؤية المنيو:</p>
+  //           <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://betshawerma.com/menu" alt="Menu QR Code" class="qr-code" />
+  //         </div>
+  //       </body>
+  //     </html>
+  //   `;
+  //     receiptWindow.document.write(html);
+  //     receiptWindow.document.close();
+  //     receiptWindow.focus();
+
+  //     setTimeout(() => {
+  //       try {
+  //         receiptWindow.print();
+  //         receiptWindow.close();
+  //         console.log('Print dialog triggered successfully');
+  //       } catch (printError) {
+  //         console.error('Error during printing:', printError);
+  //         toast.error('Failed to trigger print dialog');
+  //       }
+  //     }, 500);
+  //   } catch (err) {
+  //     console.error('Critical error in printReceipt function:', err);
+  //     toast.error('Error generating receipt');
+  //   }
+  // };
+
+  // const handleSubmitOrder = async () => {
+  //   if (cart.length === 0) {
+  //     toast.error('Cart is empty');
+  //     return;
+  //   }
+
+  //   setIsProcessing(true);
+  //   const totals = calculateTotals();
+  //   const orderData = {
+  //     items: cart.map(item => ({
+  //       id: item.id,
+  //       name: item.name,
+  //       quantity: item.quantity,
+  //       price: item.price || item.basePrice,
+  //       total: item.totalPrice || item.price * item.quantity,
+  //       extras: item.extras || [],
+  //       notes: item.notes || ''
+  //     })),
+  //     total: totals.total,
+  //     totals: totals,
+  //     orderType,
+  //     paymentMethod,
+  //     cashierName: 'Cashier',
+  //     customerName: customerName || 'Walk-in Customer',
+  //     status: 'pending'
+  //   };
+
+  //   try {
+  //     const ordersRef = collection(db, 'orders');
+  //     const newOrder = {
+  //       ...orderData,
+  //       orderNumber: Math.floor(Math.random() * 9000 + 1000).toString(),
+  //       createdAt: new Date().toISOString()
+  //     };
+
+  //     // Print the receipt immediately BEFORE hitting the database
+  //     // This prevents the popup from being blocked and bypasses any Firebase connection hang-ups
+  //     printReceipt(newOrder);
+
+  //     await addDoc(ordersRef, newOrder);
+
+  //     toast.success(`Order #${newOrder.orderNumber} created successfully!`);
+
+  //     const transactionsRef = collection(db, 'transactions');
+  //     await addDoc(transactionsRef, {
+  //       type: 'income',
+  //       amount: totals.total,
+  //       description: `Order #${newOrder.orderNumber}`,
+  //       category: 'sales',
+  //       createdAt: new Date().toISOString()
+  //     });
+
+  //     setCart([]);
+  //     setCustomerName('');
+  //   } catch (error) {
+  //     toast.error('Failed to create order');
+  //     console.error(error);
+  //   } finally {
+  //     setIsProcessing(false);
+  //   }
+  // };
+
+  const printReceipt = (order) => {
+    setReceiptData(order);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setReceiptData(null), 1000);
+    }, 300);
   };
 
   const handleSubmitOrder = async () => {
@@ -1337,7 +1505,10 @@ function CashierDashboard({ userRole }) {
     }
 
     setIsProcessing(true);
-    const orderData = {
+    const totals = calculateTotals();
+    const orderNumber = Math.floor(Math.random() * 9000 + 1000).toString();
+
+    const newOrder = {
       items: cart.map(item => ({
         id: item.id,
         name: item.name,
@@ -1347,46 +1518,50 @@ function CashierDashboard({ userRole }) {
         extras: item.extras || [],
         notes: item.notes || ''
       })),
-      total: calculateTotal(),
+      total: totals.total,
+      totals,
+      orderType,
+      paymentMethod,
+      cashierName: 'Cashier',
       customerName: customerName || 'Walk-in Customer',
-      status: 'pending'
+      status: 'pending',
+      orderNumber,
+      createdAt: new Date().toISOString(),
+      amountReceived: paymentMethod === 'cash' ? (parseFloat(amountReceived) || totals.total) : totals.total,
+      change: paymentMethod === 'cash' ? Math.max(0, (parseFloat(amountReceived) || 0) - totals.total) : 0
     };
 
     try {
-      const ordersRef = collection(db, 'orders');
-      const newOrder = {
-        ...orderData,
-        orderNumber: Math.floor(Math.random() * 9000 + 1000).toString(),
-        createdAt: new Date().toISOString()
-      };
-      await addDoc(ordersRef, newOrder);
-      
-      toast.success(`Order #${newOrder.orderNumber} created successfully!`);
-      
-      const transactionsRef = collection(db, 'transactions');
-      await addDoc(transactionsRef, {
+      await addDoc(collection(db, 'orders'), newOrder);
+
+      await addDoc(collection(db, 'transactions'), {
         type: 'income',
-        amount: calculateTotal(),
-        description: `Order #${newOrder.orderNumber}`,
+        amount: totals.total,
+        description: `Order #${orderNumber}`,
         category: 'sales',
         createdAt: new Date().toISOString()
       });
-      
+
+      toast.success(t('cashier.orderCreated', { number: orderNumber }));
+
+      // ✅ This now works - no popup, uses window.print() instead
+      printReceipt(newOrder);
+
       setCart([]);
       setCustomerName('');
+      setAmountReceived('');
     } catch (error) {
-      toast.error('Failed to create order');
+      toast.error(t('cashier.failedToCreate'));
       console.error(error);
     } finally {
       setIsProcessing(false);
     }
   };
-
   // Admin functions
   const handleAddOrUpdateItem = async (formData, imageFile) => {
     let imageUrl = formData.imageUrl || formData.image;
     let imagePath = formData.imagePath;
-    
+
     if (imageFile) {
       setUploading(true);
       const uploadResult = await uploadImage(formData.id || Date.now(), imageFile);
@@ -1401,14 +1576,14 @@ function CashierDashboard({ userRole }) {
       }
       setUploading(false);
     }
-    
-    const updatedItem = { 
-      ...formData, 
+
+    const updatedItem = {
+      ...formData,
       image: imageUrl || formData.image,
       imageUrl: imageUrl || formData.imageUrl,
       imagePath: imagePath || formData.imagePath
     };
-    
+
     try {
       if (editingItem) {
         await updateMenuItem(editingItem.id, updatedItem);
@@ -1417,7 +1592,7 @@ function CashierDashboard({ userRole }) {
         await addMenuItem(updatedItem);
         toast.success('Item added successfully!');
       }
-      
+
       setShowMenuModal(false);
       setEditingItem(null);
       setImagePreview(null);
@@ -1432,7 +1607,7 @@ function CashierDashboard({ userRole }) {
       if (imagePath) {
         await deleteImage(imagePath);
       }
-      
+
       try {
         await deleteMenuItem(itemId);
         toast.success('Item deleted successfully!');
@@ -1458,17 +1633,17 @@ function CashierDashboard({ userRole }) {
       {/* Header with Role Badge */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">💰 Cashier Dashboard</h1>
+          <h1 className="text-3xl font-bold">💰 {t('cashier.dashboard')}</h1>
           <div className="flex items-center gap-2 mt-2">
             {isAdmin ? (
               <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                 <Unlock size={14} />
-                Admin Mode - Full Access
+                {t('cashier.adminMode')}
               </span>
             ) : (
               <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                 <Lock size={14} />
-                Cashier Mode - View Only
+                {t('cashier.cashierMode')}
               </span>
             )}
           </div>
@@ -1481,7 +1656,7 @@ function CashierDashboard({ userRole }) {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Edit2 size={24} />
-              Menu Management (Admin Only)
+              {t('cashier.menuManagement')}
             </h2>
             <button
               onClick={() => {
@@ -1492,7 +1667,7 @@ function CashierDashboard({ userRole }) {
               className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center gap-2"
             >
               <Plus size={18} />
-              Add New Item
+              {t('cashier.addNewItem')}
             </button>
           </div>
 
@@ -1507,14 +1682,14 @@ function CashierDashboard({ userRole }) {
                       <div className="flex-1">
                         {/* Image Display */}
                         {item.imageUrl ? (
-                          <img 
-                            src={item.imageUrl} 
+                          <img
+                            src={item.imageUrl}
                             alt={item.name}
                             className="w-full h-32 object-cover rounded-lg mb-3"
                           />
                         ) : item.image && (item.image.startsWith('data:image') || item.image.startsWith('http')) ? (
-                          <img 
-                            src={item.image} 
+                          <img
+                            src={item.image}
                             alt={item.name}
                             className="w-full h-32 object-cover rounded-lg mb-3"
                           />
@@ -1523,7 +1698,7 @@ function CashierDashboard({ userRole }) {
                             <ImageIcon size={32} className="text-gray-400" />
                           </div>
                         )}
-                        
+
                         <h4 className="font-semibold text-lg">{item.name}</h4>
                         <p className="text-gray-600">₪{item.price}</p>
                         <p className="text-sm text-gray-500">{item.weight}</p>
@@ -1557,7 +1732,7 @@ function CashierDashboard({ userRole }) {
           ))}
         </div>
       )}
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Menu Section */}
         <div className="lg:col-span-2">
@@ -1568,11 +1743,10 @@ function CashierDashboard({ userRole }) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-3 font-medium transition-all ${
-                    activeTab === tab.id
-                      ? `${tab.color} text-white`
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                  className={`flex items-center gap-2 px-6 py-3 font-medium transition-all ${activeTab === tab.id
+                    ? `${tab.color} text-white`
+                    : 'text-gray-600 hover:bg-gray-100'
+                    }`}
                 >
                   <tab.icon size={18} />
                   {tab.name}
@@ -1591,21 +1765,21 @@ function CashierDashboard({ userRole }) {
                 menuItems[activeTab]
                   .filter(item => item.available !== false)
                   .map(item => (
-                    <div 
-                      key={item.id} 
-                      className="border rounded-lg p-4 hover:shadow-lg transition-all cursor-pointer" 
+                    <div
+                      key={item.id}
+                      className="border rounded-lg p-4 hover:shadow-lg transition-all cursor-pointer"
                       onClick={() => addToCart(item)}
                     >
                       {/* Image Display */}
                       {item.imageUrl ? (
-                        <img 
-                          src={item.imageUrl} 
+                        <img
+                          src={item.imageUrl}
                           alt={item.name}
                           className="w-full h-32 object-cover rounded-lg mb-3"
                         />
                       ) : item.image && (item.image.startsWith('data:image') || item.image.startsWith('http')) ? (
-                        <img 
-                          src={item.image} 
+                        <img
+                          src={item.image}
                           alt={item.name}
                           className="w-full h-32 object-cover rounded-lg mb-3"
                         />
@@ -1614,7 +1788,7 @@ function CashierDashboard({ userRole }) {
                           <span className="text-4xl">{item.image || '🍽️'}</span>
                         </div>
                       )}
-                      
+
                       <h3 className="font-semibold text-lg">{item.name}</h3>
                       <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                         <Scale size={14} />
@@ -1628,7 +1802,7 @@ function CashierDashboard({ userRole }) {
                         <p className="text-xs text-green-600 mt-2">{item.includes}</p>
                       )}
                       <button className="mt-3 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 w-full text-sm">
-                        Add to Order
+                        {t('cashier.addToOrder')}
                       </button>
                     </div>
                   ))
@@ -1647,23 +1821,48 @@ function CashierDashboard({ userRole }) {
           <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
             <div className="flex items-center mb-4">
               <ShoppingCart className="mr-2" />
-              <h2 className="text-2xl font-bold">Current Order</h2>
+              <h2 className="text-2xl font-bold">{t('cashier.currentOrder')}</h2>
             </div>
-            
+
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Customer Name</label>
+              <label className="block text-sm font-medium mb-2">{t('cashier.customerName')}</label>
               <input
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 className="w-full border rounded-lg px-3 py-2"
-                placeholder="Enter customer name"
+                placeholder={t('cashier.enterCustomerName')}
               />
+            </div>
+
+            <div className="mb-4 grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">{t('cashier.orderType')}</label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="orderType" checked={orderType === 'takeaway'} onChange={() => setOrderType('takeaway')} className="w-4 h-4 text-orange-500" /> {t('cashier.takeaway')}
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="orderType" checked={orderType === 'dinein'} onChange={() => setOrderType('dinein')} className="w-4 h-4 text-orange-500" /> {t('cashier.dineIn')}
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">{t('cashier.paymentMethod')}</label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="paymentMethod" checked={paymentMethod === 'cash'} onChange={() => setPaymentMethod('cash')} className="w-4 h-4 text-orange-500" /> {t('cashier.cash')}
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="paymentMethod" checked={paymentMethod === 'visa'} onChange={() => setPaymentMethod('visa')} className="w-4 h-4 text-orange-500" /> {t('cashier.visa')}
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="border-t border-b py-4 mb-4 max-h-96 overflow-y-auto">
               {cart.length === 0 ? (
-                <p className="text-gray-500 text-center">Cart is empty</p>
+                <p className="text-gray-500 text-center">{t('cashier.cartEmpty')}</p>
               ) : (
                 cart.map(item => (
                   <div key={item.id} className="mb-4 pb-3 border-b">
@@ -1672,8 +1871,13 @@ function CashierDashboard({ userRole }) {
                         <p className="font-semibold">{item.name}</p>
                         <p className="text-sm text-gray-600">₪{item.price || item.basePrice} each</p>
                         {item.extras && item.extras.length > 0 && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {item.extras.map(e => e.name).join(', ')}
+                          <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+                            {item.extras.map((e, idx) => (
+                              <div key={idx} className="flex justify-between max-w-[150px]">
+                                <span>+ {e.name}</span>
+                                <span>₪{e.price.toFixed(2)}</span>
+                              </div>
+                            ))}
                           </div>
                         )}
                         {item.notes && (
@@ -1711,18 +1915,51 @@ function CashierDashboard({ userRole }) {
             </div>
 
             <div className="mb-4">
-              <div className="flex justify-between text-xl font-bold">
-                <span>Total:</span>
-                <span>₪{calculateTotal()}</span>
+              <div className="flex justify-between text-gray-600 mb-1">
+                <span>{t('cashier.subtotal')}:</span>
+                <span>₪{calculateTotals().subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-gray-600 mb-1">
+                <span>{t('cashier.vat')}:</span>
+                <span>₪{calculateTotals().vat.toFixed(2)}</span>
+              </div>
+              {orderType === 'dinein' && (
+                <div className="flex justify-between text-gray-600 mb-1">
+                  <span>{t('cashier.service')}:</span>
+                  <span>₪{calculateTotals().service.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-xl font-bold border-t pt-2 mt-2">
+                <span>{t('cashier.total')}:</span>
+                <span>₪{calculateTotals().total.toFixed(2)}</span>
               </div>
             </div>
+
+            {paymentMethod === 'cash' && cart.length > 0 && (
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-gray-700">{t('cashier.amountReceived')}</label>
+                  <input
+                    type="number"
+                    value={amountReceived}
+                    onChange={(e) => setAmountReceived(e.target.value)}
+                    className="w-32 border rounded-md px-2 py-1 text-right font-semibold"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="flex justify-between text-lg font-bold text-orange-600 border-t pt-2 mt-2">
+                  <span>{t('cashier.change')}:</span>
+                  <span>₪{Math.max(0, (parseFloat(amountReceived) || 0) - calculateTotals().total).toFixed(2)}</span>
+                </div>
+              </div>
+            )}
 
             <button
               onClick={handleSubmitOrder}
               disabled={isProcessing || cart.length === 0}
               className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 disabled:bg-gray-400"
             >
-              {isProcessing ? 'Processing...' : 'Complete Order'}
+              {isProcessing ? t('cashier.processing') : t('cashier.completeOrder')}
             </button>
           </div>
         </div>
@@ -1733,7 +1970,7 @@ function CashierDashboard({ userRole }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">Customize {selectedItem.name}</h2>
+              <h2 className="text-2xl font-bold">{t('cashier.customize')} {selectedItem.name}</h2>
               <button onClick={() => setShowCustomizeModal(false)} className="text-gray-500 hover:text-gray-700">
                 <X size={24} />
               </button>
@@ -1771,7 +2008,7 @@ function CashierDashboard({ userRole }) {
               <label className="block font-semibold mb-2">Special Instructions</label>
               <textarea
                 value={customizations.notes}
-                onChange={(e) => setCustomizations({...customizations, notes: e.target.value})}
+                onChange={(e) => setCustomizations({ ...customizations, notes: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2"
                 rows="2"
                 placeholder="e.g., extra spicy, no onions, etc."
@@ -1782,14 +2019,14 @@ function CashierDashboard({ userRole }) {
               <label className="block font-semibold mb-2">Quantity</label>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setCustomizations({...customizations, quantity: Math.max(1, customizations.quantity - 1)})}
+                  onClick={() => setCustomizations({ ...customizations, quantity: Math.max(1, customizations.quantity - 1) })}
                   className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
                 >
                   -
                 </button>
                 <span className="text-xl font-semibold w-12 text-center">{customizations.quantity}</span>
                 <button
-                  onClick={() => setCustomizations({...customizations, quantity: customizations.quantity + 1})}
+                  onClick={() => setCustomizations({ ...customizations, quantity: customizations.quantity + 1 })}
                   className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
                 >
                   +
@@ -1879,9 +2116,9 @@ function CashierDashboard({ userRole }) {
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                   {(imagePreview || editingItem?.imageUrl || editingItem?.image) && (
                     <div className="mb-3">
-                      <img 
-                        src={imagePreview || editingItem?.imageUrl || editingItem?.image} 
-                        alt="Preview" 
+                      <img
+                        src={imagePreview || editingItem?.imageUrl || editingItem?.image}
+                        alt="Preview"
                         className="w-full h-40 object-cover rounded-lg"
                       />
                     </div>
@@ -2015,6 +2252,120 @@ function CashierDashboard({ userRole }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Receipt - only visible when printing */}
+      <style>
+        {`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #receipt-print-area,
+          #receipt-print-area * {
+            visibility: visible;
+          }
+          #receipt-print-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            font-family: 'Courier New', monospace;
+            direction: rtl;
+            padding: 20px;
+          }
+        }
+        `}
+      </style>
+
+      {receiptData && (
+        <div id="receipt-print-area">
+          <div style={{ textAlign: 'center', borderBottom: '1px dashed #000', paddingBottom: '10px', marginBottom: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '10px' }}>
+              <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path>
+              <path d="M7 2v20"></path>
+              <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>
+            </svg>
+            <h2 style={{ margin: '5px 0' }}>Betshawerma</h2>
+            <p style={{ fontSize: '12px', margin: '2px 0' }}>{t('cashier.receipt.hotline')}: 19300</p>
+            <p style={{ fontSize: '12px', margin: '2px 0' }}>{t('cashier.receipt.commercialReg')}: 55689</p>
+            <p style={{ fontSize: '12px', margin: '2px 0' }}>{t('cashier.receipt.taxCard')}: 5-967-522</p>
+            <p style={{ fontSize: '12px', margin: '5px 0 2px' }}>
+              {new Date(receiptData.createdAt).toLocaleString()}
+            </p>
+          </div>
+
+          <div style={{ textAlign: 'right', marginBottom: '10px', fontSize: '12px' }}>
+            <div><strong>{t('cashier.receipt.cashier')}:</strong> {receiptData.cashierName}</div>
+            <div><strong>{t('cashier.receipt.orderNumber')}:</strong> #{receiptData.orderNumber}</div>
+            <div><strong>{t('cashier.orderType')}:</strong> {receiptData.orderType === 'dinein' ? t('cashier.dineIn') : t('cashier.takeaway')}</div>
+            <div><strong>{t('cashier.paymentMethod')}:</strong> {receiptData.paymentMethod === 'cash' ? t('cashier.cash') : t('cashier.visa')}</div>
+          </div>
+
+          <div style={{ borderBottom: '1px dashed #000', marginBottom: '10px' }} />
+
+          <div>
+            {receiptData.items.map((item, i) => (
+              <div key={i} style={{ marginBottom: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold' }}>
+                  <span>{item.quantity}x {item.name}</span>
+                  <span>₪{(item.price * item.quantity).toFixed(2)}</span>
+                </div>
+                {item.extras && item.extras.length > 0 && item.extras.map((extra, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', paddingRight: '15px' }}>
+                    <span>+ {extra.name}</span>
+                    <span>₪{(extra.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+              <span>{t('cashier.subtotal')}:</span>
+              <span>₪{receiptData.totals.subtotal.toFixed(2)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+              <span>{t('cashier.vat')}:</span>
+              <span>₪{receiptData.totals.vat.toFixed(2)}</span>
+            </div>
+            {receiptData.orderType === 'dinein' && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                <span>{t('cashier.service')}:</span>
+                <span>₪{receiptData.totals.service.toFixed(2)}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '18px', marginTop: '5px', borderBottom: '1px solid #000', paddingBottom: '5px' }}>
+              <span>{t('cashier.total')}:</span>
+              <span>₪{receiptData.totals.total.toFixed(2)}</span>
+            </div>
+            {receiptData.paymentMethod === 'cash' && (
+              <div style={{ marginTop: '5px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span>{t('cashier.amountReceived')}:</span>
+                  <span>₪{receiptData.amountReceived.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold' }}>
+                  <span>{t('cashier.change')}:</span>
+                  <span>₪{receiptData.change.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginTop: '20px', fontSize: '12px', textAlign: 'center', borderTop: '1px dashed #000', paddingTop: '10px' }}>
+            <p style={{ fontWeight: 'bold' }}>{t('cashier.receipt.thanks')}</p>
+            <div style={{ marginTop: '10px' }}>
+              <p style={{ margin: '0 0 5px' }}>{t('cashier.receipt.scanMenu')}</p>
+              <img 
+                src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https%3A%2F%2Fbetshawerma.com%2Fmenu" 
+                alt="Menu QR Code" 
+                style={{ width: '120px', height: '120px', display: 'block', margin: '5px auto' }} 
+              />
+            </div>
           </div>
         </div>
       )}

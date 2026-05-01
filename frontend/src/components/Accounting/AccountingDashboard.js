@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { DollarSign, TrendingUp, TrendingDown, Plus, Users } from 'lucide-react';
 import { getTransactions, getFinancialSummary, addTransaction, recordSalary } from '../../services/firebaseService';
 
 function AccountingDashboard() {
+  const { t } = useTranslation();
   const [transactions, setTransactions] = useState([]);
   const [summary, setSummary] = useState({ totalIncome: 0, totalExpense: 0, profit: 0 });
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -115,7 +117,7 @@ function AccountingDashboard() {
       <div className="flex justify-center items-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <div className="text-xl">Loading accounting data...</div>
+          <div className="text-xl">{t('admin.common.loading')}</div>
         </div>
       </div>
     );
@@ -123,13 +125,13 @@ function AccountingDashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">📊 Accounting Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-8">📊 {t('admin.tabs.accounting')}</h1>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-700">Total Income</h3>
+            <h3 className="text-lg font-semibold text-gray-700">{t('admin.accounting.income')}</h3>
             <TrendingUp className="text-green-500" size={24} />
           </div>
           <p className="text-3xl font-bold text-green-600">₪{summary.totalIncome.toFixed(2)}</p>
@@ -137,7 +139,7 @@ function AccountingDashboard() {
 
         <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-700">Total Expenses</h3>
+            <h3 className="text-lg font-semibold text-gray-700">{t('admin.accounting.expenses')}</h3>
             <TrendingDown className="text-red-500" size={24} />
           </div>
           <p className="text-3xl font-bold text-red-600">₪{summary.totalExpense.toFixed(2)}</p>
@@ -145,7 +147,7 @@ function AccountingDashboard() {
 
         <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-700">Net Profit</h3>
+            <h3 className="text-lg font-semibold text-gray-700">{t('admin.accounting.profit')}</h3>
             <DollarSign className="text-blue-500" size={24} />
           </div>
           <p className={`text-3xl font-bold ${summary.profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
@@ -159,7 +161,7 @@ function AccountingDashboard() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex space-x-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin.salaries.month')}</label>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
@@ -171,7 +173,7 @@ function AccountingDashboard() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin.salaries.year')}</label>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -189,14 +191,14 @@ function AccountingDashboard() {
               className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
             >
               <Plus className="inline mr-2" size={16} />
-              Add Transaction
+              {t('admin.accounting.addTransaction')}
             </button>
             <button
               onClick={() => setShowAddSalary(true)}
               className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
             >
               <Users className="inline mr-2" size={16} />
-              Add Salary
+              {t('admin.salaries.addSalary')}
             </button>
           </div>
         </div>
@@ -205,24 +207,24 @@ function AccountingDashboard() {
       {/* Transactions Table */}
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="px-6 py-4 border-b bg-gray-50">
-          <h2 className="text-xl font-bold">Transaction History</h2>
+          <h2 className="text-xl font-bold">{t('admin.inventory.history')}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.inventory.date')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.accounting.description')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.accounting.category')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.accounting.type')}</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.salaries.amount')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {transactions.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                    No transactions yet. Add your first transaction!
+                    {t('admin.inventory.noRecords')}
                   </td>
                 </tr>
               ) : (
@@ -257,22 +259,22 @@ function AccountingDashboard() {
       {showAddTransaction && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full">
-            <h2 className="text-2xl font-bold mb-4">Add Transaction</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('admin.accounting.addTransaction')}</h2>
             <form onSubmit={handleAddTransaction}>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Type</label>
+                <label className="block text-sm font-medium mb-2">{t('admin.accounting.type')}</label>
                 <select
                   value={newTransaction.type}
                   onChange={(e) => setNewTransaction({...newTransaction, type: e.target.value})}
                   className="w-full border rounded-lg px-3 py-2"
                   required
                 >
-                  <option value="expense">Expense</option>
-                  <option value="income">Income</option>
+                  <option value="expense">{t('admin.accounting.expenses')}</option>
+                  <option value="income">{t('admin.accounting.income')}</option>
                 </select>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Amount (₪)</label>
+                <label className="block text-sm font-medium mb-2">{t('admin.salaries.amount')} (₪)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -283,7 +285,7 @@ function AccountingDashboard() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Description</label>
+                <label className="block text-sm font-medium mb-2">{t('admin.accounting.description')}</label>
                 <input
                   type="text"
                   value={newTransaction.description}
@@ -293,7 +295,7 @@ function AccountingDashboard() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Category</label>
+                <label className="block text-sm font-medium mb-2">{t('admin.accounting.category')}</label>
                 <input
                   type="text"
                   value={newTransaction.category}
@@ -308,13 +310,13 @@ function AccountingDashboard() {
                   onClick={() => setShowAddTransaction(false)}
                   className="px-4 py-2 border rounded hover:bg-gray-50"
                 >
-                  Cancel
+                  {t('admin.common.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
-                  Add Transaction
+                  {t('admin.accounting.addTransaction')}
                 </button>
               </div>
             </form>
@@ -326,10 +328,10 @@ function AccountingDashboard() {
       {showAddSalary && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full">
-            <h2 className="text-2xl font-bold mb-4">Record Employee Salary</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('admin.salaries.addSalary')}</h2>
             <form onSubmit={handleAddSalary}>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Employee Name</label>
+                <label className="block text-sm font-medium mb-2">{t('admin.salaries.employeeName')}</label>
                 <input
                   type="text"
                   value={salaryData.employeeName}
@@ -339,7 +341,7 @@ function AccountingDashboard() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Salary Amount (₪)</label>
+                <label className="block text-sm font-medium mb-2">{t('admin.salaries.amount')} (₪)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -355,13 +357,13 @@ function AccountingDashboard() {
                   onClick={() => setShowAddSalary(false)}
                   className="px-4 py-2 border rounded hover:bg-gray-50"
                 >
-                  Cancel
+                  {t('admin.common.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
                 >
-                  Record Salary
+                  {t('admin.salaries.addSalary')}
                 </button>
               </div>
             </form>

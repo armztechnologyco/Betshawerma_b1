@@ -4,8 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { loginUser } from '../../services/authService';
 import { LogIn, User, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../Common/LanguageSwitcher';
 
 function Login() {
+  const { t, i18n } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,7 +18,7 @@ function Login() {
     e.preventDefault();
     
     if (!email || !password) {
-      toast.error('Please enter email and password');
+      toast.error(t('login.pleaseEnterCreds'));
       return;
     }
     
@@ -23,14 +26,14 @@ function Login() {
     const result = await loginUser(email, password);
     
     if (result.success) {
-      toast.success(`Welcome ${result.user.name}!`);
+      toast.success(t('login.welcome', { name: result.user.name }));
       
       // Force a hard navigation to clear any cached state
       window.location.href = '/';
       // OR use navigate with replace
       // navigate('/', { replace: true });
     } else {
-      toast.error(result.error || 'Login failed');
+      toast.error(result.error || t('login.loginFailed'));
       setLoading(false);
     }
   };
@@ -48,15 +51,20 @@ function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* Absolute positioned top bar for language switcher */}
+      <div className="absolute top-4 right-4 rtl:right-auto rtl:left-4 z-10">
+        <LanguageSwitcher />
+      </div>
+
       <div className="max-w-md w-full space-y-8 bg-white rounded-lg shadow-xl p-8">
         <div>
           <div className="text-center">
             <div className="text-6xl mb-4">🍖</div>
             <h2 className="text-3xl font-extrabold text-gray-900">
-              Shawarma Shop System
+              {t('login.systemTitle')}
             </h2>
             <p className="mt-2 text-sm text-gray-600">
-              Sign in to your account
+              {t('login.signInTitle')}
             </p>
           </div>
         </div>
@@ -65,10 +73,10 @@ function Login() {
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email Address
+                {t('login.emailAddress')}
               </label>
               <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 rtl:left-auto rtl:right-0 rtl:pr-3 pl-3 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -79,18 +87,18 @@ function Login() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
-                  placeholder="Enter your email"
+                  className="appearance-none block w-full pl-10 pr-3 rtl:pl-3 rtl:pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                  placeholder={t('login.emailPlaceholder')}
                 />
               </div>
             </div>
             
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                {t('login.password')}
               </label>
               <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 rtl:left-auto rtl:right-0 rtl:pr-3 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -101,8 +109,8 @@ function Login() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
-                  placeholder="Enter your password"
+                  className="appearance-none block w-full pl-10 pr-3 rtl:pl-3 rtl:pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                  placeholder={t('login.passwordPlaceholder')}
                 />
               </div>
             </div>
@@ -114,10 +122,10 @@ function Login() {
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
             >
-              <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                <LogIn className="h-5 w-5 text-orange-500 group-hover:text-orange-400" />
+              <span className="absolute left-0 rtl:left-auto rtl:right-0 inset-y-0 flex items-center pl-3 rtl:pl-0 rtl:pr-3">
+                <LogIn className={`h-5 w-5 text-orange-500 group-hover:text-orange-400 ${i18n.language === 'ar' ? 'transform rotate-180' : ''}`} />
               </span>
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? t('login.signingIn') : t('login.signIn')}
             </button>
           </div>
         </form>
@@ -128,7 +136,7 @@ function Login() {
               <div className="w-full border-t border-gray-300"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Demo Accounts</span>
+              <span className="px-2 bg-white text-gray-500">{t('login.demoAccounts')}</span>
             </div>
           </div>
           
@@ -143,10 +151,10 @@ function Login() {
                   <div>
                     <p className="font-semibold text-gray-800">{account.role}</p>
                     <p className="text-xs text-gray-500">{account.email}</p>
-                    <p className="text-xs text-orange-600">Access: {account.page}</p>
+                    <p className="text-xs text-orange-600">{t('login.access')}: {account.page}</p>
                   </div>
                   <button className="text-xs bg-orange-500 text-white px-2 py-1 rounded hover:bg-orange-600">
-                    Use
+                    {t('login.use')}
                   </button>
                 </div>
               </div>
