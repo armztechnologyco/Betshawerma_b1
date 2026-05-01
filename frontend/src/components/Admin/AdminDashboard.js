@@ -299,10 +299,17 @@ const getProgressPercentage = (remaining, total) => {
           const consumedKg = item.weightInKg * item.quantity;
           
           let inventoryKey = '';
-          if (item.name.toLowerCase().includes('chicken')) inventoryKey = 'Chicken Meat';
-          else if (item.name.toLowerCase().includes('beef')) inventoryKey = 'Beef Meat';
-          else if (item.name.toLowerCase().includes('meat')) inventoryKey = 'Meat';
-          else return;
+          if (item.linkedInventoryItem) {
+            inventoryKey = item.linkedInventoryItem;
+          } else if (item.name.toLowerCase().includes('chicken')) {
+            inventoryKey = 'Chicken Meat';
+          } else if (item.name.toLowerCase().includes('beef')) {
+            inventoryKey = 'Beef Meat';
+          } else if (item.name.toLowerCase().includes('meat')) {
+            inventoryKey = 'Meat';
+          } else {
+            return;
+          }
           
           if (!consumedByItem[inventoryKey]) {
             consumedByItem[inventoryKey] = 0;
@@ -457,6 +464,7 @@ const getProgressPercentage = (remaining, total) => {
   setImagePreview(null);
   setEditForm({ 
     name: '', price: '', weight: '', weightInKg: '', 
+    linkedInventoryItem: '',
     preparationTime: 5, // Add default value
     image: '', imageFile: null, basePrice: '', includes: '', 
     category: selectedCategory, available: true 
@@ -490,6 +498,7 @@ const handleEditItem = (item) => {
     price: item.price, 
     weight: item.weight, 
     weightInKg: item.weightInKg || '',
+    linkedInventoryItem: item.linkedInventoryItem || '',
     preparationTime: item.preparationTime || 5, // Add this
     image: item.image, 
     imageFile: null, 
@@ -573,6 +582,7 @@ const handleEditItem = (item) => {
     price: parseFloat(editForm.price),
     weight: editForm.weight,
     weightInKg: parseFloat(editForm.weightInKg) || 0,
+    linkedInventoryItem: editForm.linkedInventoryItem || '',
     preparationTime: parseInt(editForm.preparationTime) || 5, // Add preparation time
     image: editForm.image || '🍽️',
     basePrice: parseFloat(editForm.basePrice || editForm.price),
@@ -1470,6 +1480,17 @@ const handleEditItem = (item) => {
           value={editForm.weightInKg} 
           onChange={e => setEditForm({...editForm, weightInKg: e.target.value})} 
         />
+        
+        <select 
+          className="w-full border rounded px-3 py-2 mb-3" 
+          value={editForm.linkedInventoryItem || ""} 
+          onChange={e => setEditForm({...editForm, linkedInventoryItem: e.target.value})}
+        >
+          <option value="">-- No Inventory Link --</option>
+          {Array.from(new Set(purchases.map(p => p.itemName))).map(item => (
+            <option key={item} value={item}>{item}</option>
+          ))}
+        </select>
         
         {/* NEW: Preparation Time Field */}
         <div className="mb-3">

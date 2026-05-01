@@ -42,9 +42,19 @@ function CashierDashboard({ userRole }) {
     drinks: []
   });
 
+  const [inventoryItems, setInventoryItems] = useState([]);
+
   useEffect(() => {
     const saved = localStorage.getItem('menuItems');
     if (saved) setMenu(JSON.parse(saved));
+    
+    const savedPurchases = localStorage.getItem('purchases');
+    if (savedPurchases) {
+      const purchases = JSON.parse(savedPurchases);
+      const uniqueItems = Array.from(new Set(purchases.map(p => p.itemName)));
+      setInventoryItems(uniqueItems);
+    }
+    
     setLoading(false);
   }, []);
 
@@ -103,6 +113,8 @@ function CashierDashboard({ userRole }) {
       name: data.name,
       price: data.price,
       weight: data.weight,
+      weightInKg: data.weightInKg || 0,
+      linkedInventoryItem: data.linkedInventoryItem || '',
       category: data.category,
       includes: data.includes || '',
       available: data.available,
@@ -245,6 +257,8 @@ function CashierDashboard({ userRole }) {
                 name: fd.get('name'),
                 price: parseFloat(fd.get('price')),
                 weight: fd.get('weight'),
+                weightInKg: parseFloat(fd.get('weightInKg')) || 0,
+                linkedInventoryItem: fd.get('linkedInventoryItem'),
                 category: fd.get('category'),
                 includes: fd.get('includes'),
                 available: fd.get('available') === 'on'
@@ -270,7 +284,15 @@ function CashierDashboard({ userRole }) {
 
               <input name="name" defaultValue={editingItem?.name} placeholder="Name" required />
               <input name="price" type="number" defaultValue={editingItem?.price} required />
-              <input name="weight" defaultValue={editingItem?.weight} required />
+              <input name="weight" defaultValue={editingItem?.weight} placeholder="Weight description (e.g. 150g)" required />
+
+              <input name="weightInKg" type="number" step="0.01" defaultValue={editingItem?.weightInKg} placeholder="Weight in KG (for inventory)" />
+              <select name="linkedInventoryItem" defaultValue={editingItem?.linkedInventoryItem || ""}>
+                <option value="">-- No Inventory Link --</option>
+                {inventoryItems.map(item => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
 
               <select name="category" defaultValue={editingItem?.category}>
                 {tabs.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
