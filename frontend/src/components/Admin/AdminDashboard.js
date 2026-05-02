@@ -8,7 +8,7 @@ import {
   Edit2, Trash2, Save, AlertCircle, Plus, Minus,
   Scale, DollarSign, Upload, Package, Calendar,
   FileText, Filter, Download, Eye, Beef, Salad,
-  Sandwich, Coffee, Droplet, Activity, Circle, CheckCircle2
+  Sandwich, Coffee, Droplet, Activity, Circle, CheckCircle2, Search
 } from 'lucide-react';
 import { getCurrentUser, logoutUser, getAllUsers, registerUser, USER_ROLES, updateUserActiveStatus } from '../../services/authService';
 import {
@@ -109,6 +109,8 @@ function AdminDashboard({ initialTab = 'overview' }) {
   const [purchaseForm, setPurchaseForm] = useState({ itemName: '', quantity: '', unit: 'kg', price: '', supplier: '' });
   const [editingPurchase, setEditingPurchase] = useState(null);
   const [selectedInventoryItem, setSelectedInventoryItem] = useState(null);
+  const [purchaseSearch, setPurchaseSearch] = useState('');
+  const [showPurchaseFilter, setShowPurchaseFilter] = useState(false);
 
   // Inventory calculation state
   const [inventoryData, setInventoryData] = useState({
@@ -484,6 +486,35 @@ function AdminDashboard({ initialTab = 'overview' }) {
         toast.error(t('admin.common.failed'));
       }
     }
+  };
+
+  const handleExportCSV = (data, filename) => {
+    if (!data || data.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    
+    // Prepare headers and rows
+    const headers = Object.keys(data[0]).filter(k => k !== 'id').join(',');
+    const rows = data.map(obj => {
+      return Object.entries(obj)
+        .filter(([key]) => key !== 'id')
+        .map(([_, val]) => {
+          const stringVal = typeof val === 'object' ? JSON.stringify(val).replace(/"/g, '""') : String(val).replace(/"/g, '""');
+          return `"${stringVal}"`;
+        }).join(',');
+    }).join('\n');
+
+    const csvContent = "\uFEFF" + headers + "\n" + rows; // Add BOM for Excel UTF-8 support
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const saveSalary = () => {
@@ -1515,14 +1546,35 @@ function AdminDashboard({ initialTab = 'overview' }) {
             <div className="p-6 border-b border-gray-50 flex justify-between items-center">
               <h3 className="text-xl font-bold text-gray-900">{t('admin.inventory.history')}</h3>
               <div className="flex gap-2">
-                <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                <button 
+                  onClick={() => setShowPurchaseFilter(!showPurchaseFilter)}
+                  className={`p-2 transition-colors ${showPurchaseFilter ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-gray-600'}`}
+                >
                   <Filter size={20} />
                 </button>
-                <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                <button 
+                  onClick={() => handleExportCSV(purchases, 'Purchases_Report')}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
                   <Download size={20} />
                 </button>
               </div>
             </div>
+
+            {showPurchaseFilter && (
+              <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 animate-in slide-in-from-top duration-200">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Search by item name or supplier..."
+                    className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                    value={purchaseSearch}
+                    onChange={(e) => setPurchaseSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -1537,7 +1589,12 @@ function AdminDashboard({ initialTab = 'overview' }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {purchases.map((p, idx) => (
+                  {purchases
+                    .filter(p => 
+                      p.itemName.toLowerCase().includes(purchaseSearch.toLowerCase()) ||
+                      (p.supplier && p.supplier.toLowerCase().includes(purchaseSearch.toLowerCase()))
+                    )
+                    .map((p, idx) => (
                     <tr key={p.id || idx} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -1782,7 +1839,10 @@ function AdminDashboard({ initialTab = 'overview' }) {
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
               <div className="flex justify-between items-center p-6 border-b">
                 <h3 className="text-xl font-bold">Order Report</h3>
-                <button className="text-blue-600 flex items-center gap-1">
+                <button 
+                  onClick={() => handleExportCSV(reportData, 'Order_Report')}
+                  className="text-blue-600 flex items-center gap-1 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+                >
                   <Download size={18} /> {t('admin.reports.download')}
                 </button>
               </div>
