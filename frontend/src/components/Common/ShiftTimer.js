@@ -11,7 +11,7 @@ function ShiftTimer() {
   const [shiftInfo, setShiftInfo] = useState(null);
   const [isLate, setIsLate] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showWarning, setShowWarning] = useState(false);
+  const warningShownRef = useRef(sessionStorage.getItem('shiftWarningShown') === 'true');
   const [isAdmin, setIsAdmin] = useState(false);
 
   const hasLoggedOut = useRef(false);
@@ -156,11 +156,28 @@ function ShiftTimer() {
     // Status: Active (During Shift)
     const diff = endTime - now;
 
-    if (diff <= 15 * 60 * 1000 && !showWarning) {
-      setShowWarning(true);
-      toast(`Shift ends in ${Math.ceil(diff / 60000)} minutes`, {
-        icon: '⚠️',
-      });
+    if (diff <= 10 * 60 * 1000 && !warningShownRef.current) {
+      warningShownRef.current = true;
+      sessionStorage.setItem('shiftWarningShown', 'true');
+      const mins = Math.ceil(diff / 60000);
+      
+      console.log('Triggering shift warning notification...');
+      toast(
+        <div className="flex items-center gap-3">
+          <span>{t('shiftTimer.shiftEndsSoon', { minutes: mins })}</span>
+          <button 
+            onClick={() => toast.dismiss()}
+            className="bg-orange-500 text-white px-3 py-1 rounded text-xs font-bold"
+          >
+            {t('shiftTimer.acknowledge')}
+          </button>
+        </div>,
+        {
+          icon: '⚠️',
+          duration: Infinity,
+          id: 'shift-end-warning'
+        }
+      );
     }
 
     // Late check (30 min threshold)

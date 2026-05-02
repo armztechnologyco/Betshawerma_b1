@@ -29,7 +29,8 @@
     "loggingOut": "جاري تسجيل الخروج...",
     "confirmLogout": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
     "logoutSuccess": "تم تسجيل الخروج بنجاح",
-    "shiftEndsSoon": "ستنتهي الوردية خلال {{minutes}} دقائق"
+    "shiftEndsSoon": "ستنتهي الوردية خلال {{minutes}} دقائق",
+    "acknowledge": "حسناً، علم"
   },
   "kitchen": {
     "title": "شاشة المطبخ",

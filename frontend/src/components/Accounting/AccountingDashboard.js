@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { DollarSign, TrendingUp, TrendingDown, Plus, Users } from 'lucide-react';
@@ -26,18 +26,7 @@ function AccountingDashboard() {
     year: new Date().getFullYear()
   });
 
-  useEffect(() => {
-    loadData();
-  }, [selectedMonth, selectedYear]);
-
-  const loadData = async () => {
-    setLoading(true);
-    await fetchTransactions();
-    await fetchSummary();
-    setLoading(false);
-  };
-
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       const data = await getTransactions();
       setTransactions(data);
@@ -45,9 +34,9 @@ function AccountingDashboard() {
       console.error('Error fetching transactions:', error);
       toast.error('Failed to fetch transactions');
     }
-  };
+  }, []);
 
-  const fetchSummary = async () => {
+  const fetchSummary = useCallback(async () => {
     try {
       const data = await getFinancialSummary(selectedMonth, selectedYear);
       setSummary(data);
@@ -55,7 +44,18 @@ function AccountingDashboard() {
       console.error('Error fetching summary:', error);
       toast.error('Failed to fetch summary');
     }
-  };
+  }, [selectedMonth, selectedYear, t]);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    await fetchTransactions();
+    await fetchSummary();
+    setLoading(false);
+  }, [fetchTransactions, fetchSummary]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleAddTransaction = async (e) => {
     e.preventDefault();

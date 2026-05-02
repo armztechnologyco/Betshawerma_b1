@@ -29,7 +29,8 @@
     "loggingOut": "Logging out...",
     "confirmLogout": "Are you sure you want to logout?",
     "logoutSuccess": "Logged out successfully",
-    "shiftEndsSoon": "Shift ends in {{minutes}} minutes"
+    "shiftEndsSoon": "Shift ends in {{minutes}} minutes",
+    "acknowledge": "OK, I understand"
   },
   "kitchen": {
     "title": "Kitchen Display",

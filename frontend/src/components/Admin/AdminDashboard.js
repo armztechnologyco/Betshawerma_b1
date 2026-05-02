@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -9,13 +8,14 @@ import {
   Edit2, Trash2, Save, AlertCircle, Plus, Minus,
   Scale, DollarSign, Upload, Package, Calendar,
   FileText, Filter, Download, Eye, Beef, Salad,
-  Sandwich, Coffee, Droplet
+  Sandwich, Coffee, Droplet, Activity, Circle, CheckCircle2
 } from 'lucide-react';
-import { getCurrentUser, logoutUser, getAllUsers, registerUser, USER_ROLES } from '../../services/authService';
+import { getCurrentUser, logoutUser, getAllUsers, registerUser, USER_ROLES, updateUserActiveStatus } from '../../services/authService';
 import {
   getDashboardStats, addTransaction, getTransactions,
   getFinancialSummary, recordSalary, updateOrderStatus,
-  subscribeToKitchenOrders
+  subscribeToKitchenOrders, addPurchase, subscribeToPurchases,
+  getAllOrders
 } from '../../services/firebaseService';
 import {
   subscribeToMenu,
@@ -24,7 +24,7 @@ import {
   deleteMenuItem
 } from '../../services/menuService';
 import { db } from '../../firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy, onSnapshot } from 'firebase/firestore';
 
 function AdminDashboard({ initialTab = 'overview' }) {
   const { t } = useTranslation();
@@ -116,6 +116,11 @@ function AdminDashboard({ initialTab = 'overview' }) {
     details: {}
   });
 
+  // Inventory categories state
+  const [inventoryCategories, setInventoryCategories] = useState([]);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
   // Salaries state
   const [salaries, setSalaries] = useState([]);
 
@@ -165,7 +170,6 @@ function AdminDashboard({ initialTab = 'overview' }) {
   // Load data on mount
   useEffect(() => {
     loadAdminData();
-    loadPurchases();
     loadSalaries();
   }, []);
 
@@ -175,13 +179,18 @@ function AdminDashboard({ initialTab = 'overview' }) {
       const unsubscribe = subscribeToKitchenOrders(setKitchenOrders);
       return () => unsubscribe();
     }
-    if (activeTab === 'purchases') {
-      calculateInventory();
+    if (activeTab === 'purchases' || activeTab === 'overview') {
+      const unsubscribe = subscribeToPurchases(setPurchases);
+      return () => unsubscribe();
     }
     if (activeTab === 'reports') {
       generateReport();
     }
   }, [activeTab, selectedMonth, selectedYear, purchases]);
+
+  useEffect(() => {
+    calculateInventory();
+  }, [purchases, kitchenOrders]);
 
   // Subscribe to menu changes
   useEffect(() => {
@@ -190,8 +199,37 @@ function AdminDashboard({ initialTab = 'overview' }) {
         setMenuItems(data);
       }
     });
+
+    // Real-time inventory categories
+    const qCats = query(collection(db, 'inventory_categories'), orderBy('name', 'asc'));
+    const unsubscribeCats = onSnapshot(qCats, (snapshot) => {
+      setInventoryCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeCats();
+    };
+  }, []);
+
+  // Update active status periodically
+  useEffect(() => {
+    if (user?.uid) {
+      updateUserActiveStatus(user.uid);
+      const interval = setInterval(() => updateUserActiveStatus(user.uid), 60000); // every minute
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  // Real-time users listener
+  useEffect(() => {
+    const q = query(collection(db, 'users'), orderBy('name', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
     return () => unsubscribe();
   }, []);
+
   useEffect(() => {
     if (activeTab === 'kitchen') {
       // Initialize timers for new orders
@@ -274,12 +312,6 @@ function AdminDashboard({ initialTab = 'overview' }) {
   };
 
 
-  const loadPurchases = () => {
-    const savedPurchases = localStorage.getItem('purchases');
-    if (savedPurchases) setPurchases(JSON.parse(savedPurchases));
-    else setPurchases([]);
-  };
-
   const loadSalaries = () => {
     const savedSalaries = localStorage.getItem('salaries');
     if (savedSalaries) setSalaries(JSON.parse(savedSalaries));
@@ -287,20 +319,30 @@ function AdminDashboard({ initialTab = 'overview' }) {
   };
 
   // Calculate inventory based on purchases and orders
-  const calculateInventory = () => {
-    const savedOrders = JSON.parse(localStorage.getItem('orders')) || [];
+  const calculateInventory = async () => {
+    // Get all orders from Firestore instead of localStorage
+    let allOrders = [];
+    try {
+      allOrders = await getAllOrders();
+    } catch (error) {
+      console.error("Failed to fetch orders for inventory:", error);
+      allOrders = JSON.parse(localStorage.getItem('orders')) || [];
+    }
 
     const purchasedByItem = {};
+    const consumedByItem = {};
+    const displayNames = {}; // Map to keep original casing for display
+
     purchases.forEach(purchase => {
-      const itemKey = purchase.itemName;
-      if (!purchasedByItem[itemKey]) {
-        purchasedByItem[itemKey] = 0;
-      }
-      purchasedByItem[itemKey] += purchase.quantity;
+      const originalName = purchase.itemName;
+      const itemKey = originalName?.trim().toLowerCase();
+      if (!itemKey) return;
+
+      displayNames[itemKey] = originalName;
+      purchasedByItem[itemKey] = (purchasedByItem[itemKey] || 0) + purchase.quantity;
     });
 
-    const consumedByItem = {};
-    savedOrders.forEach(order => {
+    allOrders.forEach(order => {
       order.items?.forEach(item => {
         if (item.weightInKg && item.weightInKg > 0) {
           const consumedKg = item.weightInKg * item.quantity;
@@ -338,7 +380,8 @@ function AdminDashboard({ initialTab = 'overview' }) {
       details[item] = {
         purchased: purchased,
         consumed: consumed,
-        remaining: remaining
+        remaining: remaining,
+        unit: purchases.find(p => p.itemName === item)?.unit || 'kg'
       };
 
       totalPurchased += purchased;
@@ -353,30 +396,33 @@ function AdminDashboard({ initialTab = 'overview' }) {
     });
   };
 
-  const savePurchase = () => {
+  const savePurchase = async () => {
     if (!purchaseForm.itemName || !purchaseForm.quantity || !purchaseForm.price) {
       toast.error('Please fill all required fields');
       return;
     }
 
-    const newPurchase = {
-      id: Date.now(),
-      ...purchaseForm,
-      quantity: parseFloat(purchaseForm.quantity),
-      price: parseFloat(purchaseForm.price),
-      totalCost: parseFloat(purchaseForm.quantity) * parseFloat(purchaseForm.price),
-      date: new Date().toISOString(),
-      createdAt: new Date().toISOString()
-    };
+    try {
+      const newPurchase = {
+        itemName: purchaseForm.itemName,
+        quantity: parseFloat(purchaseForm.quantity),
+        unit: purchaseForm.unit,
+        price: parseFloat(purchaseForm.price),
+        totalCost: parseFloat(purchaseForm.quantity) * parseFloat(purchaseForm.price),
+        supplier: purchaseForm.supplier,
+        date: new Date().toISOString()
+      };
 
-    const updatedPurchases = [...purchases, newPurchase];
-    setPurchases(updatedPurchases);
-    localStorage.setItem('purchases', JSON.stringify(updatedPurchases));
+      await addPurchase(newPurchase);
 
-    calculateInventory();
-    toast.success('Purchase added successfully');
-    setShowAddPurchase(false);
-    setPurchaseForm({ itemName: '', quantity: '', unit: 'kg', price: '', supplier: '' });
+      toast.success('Purchase added successfully');
+      setShowAddPurchase(false);
+      setPurchaseForm({ itemName: '', quantity: '', unit: 'kg', price: '', supplier: '' });
+      loadAccountingData(); // Update financial summary
+    } catch (error) {
+      toast.error('Failed to add purchase');
+      console.error(error);
+    }
   };
 
   const saveSalary = () => {
@@ -806,136 +852,179 @@ function AdminDashboard({ initialTab = 'overview' }) {
       {/* className="container mx-auto px-4 py-8"> */}
       {/* OVERVIEW TAB */}
       {activeTab === 'overview' && stats && (
-        <div className="space-y-8">
+        <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div
-              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all border-b-4 border-green-500"
-              onClick={() => setActiveTab('reports')}
+            <div 
+              onClick={() => setActiveTab('accounting')}
+              className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4 border-green-500 cursor-pointer group"
             >
-              <h3 className="text-lg font-semibold text-gray-700">{t('admin.overview.totalSales')}</h3>
-              <p className="text-3xl font-bold text-green-600 mt-2">₪{stats.todayRevenue || 0}</p>
-              <p className="text-xs text-gray-400 mt-2">Click to view details</p>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-bold text-gray-500 uppercase group-hover:text-green-600 transition-colors">{t('admin.overview.totalSales')}</h3>
+                <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors"><TrendingUp className="text-green-500" size={20} /></div>
+              </div>
+              <p className="text-3xl font-black text-gray-900">₪{stats.todayRevenue || 0}</p>
+            </div>
+            
+            <div 
+              onClick={() => setActiveTab('reports')}
+              className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4 border-blue-500 cursor-pointer group"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-bold text-gray-500 uppercase group-hover:text-blue-600 transition-colors">{t('admin.overview.totalOrders')}</h3>
+                <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors"><ShoppingBag className="text-blue-500" size={20} /></div>
+              </div>
+              <p className="text-3xl font-black text-gray-900">{stats.totalOrdersToday || 0}</p>
             </div>
 
-            <div
-              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all border-b-4 border-blue-500"
-              onClick={() => setActiveTab('reports')}
-            >
-              <h3 className="text-lg font-semibold text-gray-700">{t('admin.overview.totalOrders')}</h3>
-              <p className="text-3xl font-bold text-blue-600 mt-2">{stats.totalOrdersToday || 0}</p>
-              <p className="text-xs text-gray-400 mt-2">Click to view details</p>
-            </div>
-
-            <div
-              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all border-b-4 border-orange-500"
+            <div 
               onClick={() => setActiveTab('kitchen')}
+              className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4 border-orange-500 cursor-pointer group"
             >
-              <h3 className="text-lg font-semibold text-gray-700">{t('admin.overview.pendingOrders')}</h3>
-              <p className="text-3xl font-bold text-orange-600 mt-2">{(stats.pendingOrders || 0) + (stats.preparingOrders || 0)}</p>
-              <p className="text-xs text-gray-400 mt-2">Click to view kitchen</p>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-bold text-gray-500 uppercase group-hover:text-orange-600 transition-colors">{t('admin.overview.pendingOrders')}</h3>
+                <div className="p-2 bg-orange-50 rounded-lg group-hover:bg-orange-100 transition-colors"><Clock className="text-orange-500" size={20} /></div>
+              </div>
+              <p className="text-3xl font-black text-gray-900">{(stats.pendingOrders || 0) + (stats.preparingOrders || 0)}</p>
             </div>
 
-            <div
-              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all border-b-4 border-purple-500"
+            <div 
               onClick={() => setActiveTab('users')}
+              className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4 border-purple-500 cursor-pointer group"
             >
-              <h3 className="text-lg font-semibold text-gray-700">{t('admin.users.title')}</h3>
-              <p className="text-3xl font-bold text-purple-600 mt-2">{users.length}</p>
-              <p className="text-xs text-gray-400 mt-2">Click to manage users</p>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-bold text-gray-500 uppercase group-hover:text-purple-600 transition-colors">Online Staff</h3>
+                <div className="p-2 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors"><Activity className="text-purple-500" size={20} /></div>
+              </div>
+              <p className="text-3xl font-black text-gray-900">
+                {users.filter(u => {
+                  if (!u.lastActive) return false;
+                  const lastActive = new Date(u.lastActive).getTime();
+                  return (Date.now() - lastActive) < 300000; // 5 minutes
+                }).length}
+              </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Live Orders Monitor */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <div className="absolute inset-0 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-800">Live Orders Monitor</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Live Order Monitor */}
+            <div className="lg:col-span-2 bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+              <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+                  <h3 className="font-bold text-gray-800">Live Order Monitor</h3>
                 </div>
-                <button
-                  onClick={() => setActiveTab('kitchen')}
-                  className="text-blue-500 text-sm font-semibold hover:text-blue-700 flex items-center gap-1"
-                >
-                  View Kitchen <ChefHat size={14} />
-                </button>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Real-time Updates</span>
               </div>
-
-              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                {kitchenOrders.length === 0 ? (
-                  <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                    <ChefHat size={40} className="mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500 font-medium italic">No active orders right now.</p>
-                  </div>
+              <div className="divide-y divide-gray-50 max-h-[500px] overflow-y-auto">
+                {kitchenOrders.filter(o => ['pending', 'preparing', 'ready'].includes(o.status)).length === 0 ? (
+                  <div className="p-12 text-center text-gray-400 italic">No active orders right now</div>
                 ) : (
-                  kitchenOrders.map(order => (
-                    <div key={order.id} className="border border-gray-100 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${order.status === 'preparing' ? 'bg-blue-500' : 'bg-yellow-500'}`}></div>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-black text-lg text-gray-800">Order #{order.orderNumber}</p>
-                          <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                            <LayoutDashboard size={10} />
-                            {new Date(order.createdAt).toLocaleTimeString()}
-                          </p>
+                  kitchenOrders
+                    .filter(o => ['pending', 'preparing', 'ready'].includes(o.status))
+                    .map(order => (
+                      <div 
+                        key={order.id} 
+                        onClick={() => setActiveTab('kitchen')}
+                        className="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
+                            order.status === 'ready' ? 'bg-green-100 text-green-600' : 
+                            order.status === 'preparing' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'
+                          }`}>
+                            #{order.orderNumber}
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-900">{order.customerName || 'Walk-in'}</p>
+                            <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                              <span className={`flex items-center gap-1 font-bold ${
+                                order.status === 'ready' ? 'text-green-500' : 
+                                order.status === 'preparing' ? 'text-blue-500' : 'text-orange-500'
+                              }`}>
+                                <Circle size={8} fill="currentColor" /> {order.status.toUpperCase()}
+                              </span>
+                              <span>•</span>
+                              <span>{order.items?.length || 0} items</span>
+                              <span>•</span>
+                              <span>{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              {(() => {
+                                const expected = order.items?.reduce((total, item) => total + ((item.preparationTime || 5) * item.quantity), 0) || 5;
+                                const elapsed = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60);
+                                if (elapsed > expected && order.status !== 'ready') {
+                                  return (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-red-500 font-bold animate-pulse">DELAYED</span>
+                                    </>
+                                  );
+                                }
+                                return null;
+                              })()}
+                            </div>
+                          </div>
                         </div>
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${order.status === 'preparing' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                          {order.status}
-                        </span>
+                        <div className="text-right">
+                          <p className="font-black text-gray-900">₪{order.total}</p>
+                          {order.status === 'preparing' && orderTimers[order.id] && (
+                            <p className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mt-1">
+                              {formatTime(orderTimers[order.id].remainingTime)}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {order.items?.map((item, idx) => (
-                          <span key={idx} className="bg-gray-50 text-gray-700 px-2 py-1 rounded text-xs border border-gray-100">
-                            <span className="font-bold text-orange-600 mr-1">{item.quantity}x</span> {item.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))
+                    ))
                 )}
               </div>
             </div>
 
-            {/* System Users List */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Users size={20} className="text-purple-600" />
-                </div>
-                System Users & Roles
-              </h3>
-              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                {users.map(u => (
-                  <div key={u.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-transparent hover:border-purple-200 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white text-purple-600 rounded-full flex items-center justify-center font-black text-lg shadow-sm border border-purple-100">
-                        {u.name?.[0].toUpperCase() || 'U'}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-gray-800">{u.name}</p>
-                          {u.name === user?.name && (
-                            <span className="bg-green-100 text-green-700 text-[9px] px-1.5 py-0.5 rounded font-black uppercase">YOU</span>
+            {/* Online Staff List */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+              <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                  <Users size={18} className="text-purple-500" /> Online Staff
+                </h3>
+              </div>
+              <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+                {users.map(u => {
+                  const isOnline = u.lastActive && (Date.now() - new Date(u.lastActive).getTime()) < 300000;
+                  return (
+                    <div 
+                      key={u.id} 
+                      onClick={() => setActiveTab('users')}
+                      className="flex items-center justify-between group cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center font-bold">
+                            {u.name.charAt(0).toUpperCase()}
+                          </div>
+                          {isOnline && (
+                            <div className="absolute -right-0.5 -bottom-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 font-medium">{u.email}</p>
+                        <div>
+                          <p className="font-bold text-gray-900 text-sm">{u.name}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{u.role}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {isOnline ? (
+                          <span className="text-[10px] font-black text-green-500 bg-green-50 px-2 py-1 rounded-full uppercase">Online</span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-gray-400">
+                            {u.lastActive ? new Date(u.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Offline'}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-tight ${u.role === 'admin' ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}`}>
-                        {u.role}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
         </div>
       )}
+
 
       {/* CASHIER TAB */}
       {/* {activeTab === 'cashier' && (
@@ -1166,12 +1255,23 @@ function AdminDashboard({ initialTab = 'overview' }) {
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="text-xl font-bold">Order #{order.orderNumber}</h3>
                   <span className={`px-2 py-1 rounded text-xs ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      order.status === 'preparing' ? 'bg-blue-100 text-blue-800' :
-                        order.status === 'ready' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
+                    order.status === 'preparing' ? 'bg-blue-100 text-blue-800' :
+                      order.status === 'ready' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
                     }`}>
                     {order.status}
                   </span>
+                  {(() => {
+                    const elapsed = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60);
+                    if (elapsed > totalPrepTime && order.status !== 'ready') {
+                      return (
+                        <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-black animate-pulse flex items-center gap-1 border border-red-200">
+                          <AlertCircle size={12} /> {t('reports.delayed')}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 <p className="text-gray-600 mb-2">{order.customerName}</p>
@@ -1265,76 +1365,145 @@ function AdminDashboard({ initialTab = 'overview' }) {
       )}
 
 
-      {/* PURCHASES TAB */}
+      {/* INVENTORY / PURCHASES TAB */}
       {activeTab === 'purchases' && (
-        <div>
-          <div className="flex justify-between mb-6">
-            <h2 className="text-2xl font-bold">{t('admin.inventory.title')}</h2>
-            <button onClick={() => setShowAddPurchase(true)} className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-              <Plus size={18} /> {t('admin.inventory.addPurchase')}
+        <div className="space-y-8">
+          <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div>
+              <h2 className="text-3xl font-extrabold text-gray-900">{t('admin.inventory.title')}</h2>
+              <p className="text-gray-500 mt-1">Monitor stock levels and manage ingredient purchases</p>
+            </div>
+            <button
+              onClick={() => setShowAddPurchase(true)}
+              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 font-semibold transition-all transform hover:scale-105 shadow-md shadow-orange-200"
+            >
+              <Plus size={20} /> {t('admin.inventory.addPurchase')}
             </button>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h3 className="text-xl font-bold mb-4">{t('admin.inventory.history')}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">{t('admin.inventory.totalPurchased')}</p>
-                <p className="text-2xl font-bold text-blue-600">{inventoryData.totalPurchased.toFixed(2)} kg</p>
-              </div>
-              <div className="bg-orange-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">{t('admin.inventory.totalConsumed')}</p>
-                <p className="text-2xl font-bold text-orange-600">{inventoryData.totalConsumed.toFixed(2)} kg</p>
-              </div>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">{t('admin.inventory.remainingStock')}</p>
-                <p className="text-2xl font-bold text-green-600">{inventoryData.remainingStock.toFixed(2)} kg</p>
-              </div>
-            </div>
+          {/* Inventory Status Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Object.entries(inventoryData.details).map(([item, data]) => {
+              const stockPercentage = (data.remaining / data.purchased) * 100;
+              const isLow = stockPercentage < 20;
 
-            <h4 className="font-semibold mb-3">Detailed Breakdown</h4>
-            <div className="space-y-2">
-              {Object.entries(inventoryData.details).map(([item, data]) => (
-                <div key={item} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="font-medium">{item}</span>
-                  <div className="flex gap-4 text-sm">
-                    <span>Purchased: <strong>{data.purchased.toFixed(2)} kg</strong></span>
-                    <span className="text-orange-600">Consumed: <strong>{data.consumed.toFixed(2)} kg</strong></span>
-                    <span className="text-green-600">Remaining: <strong>{data.remaining.toFixed(2)} kg</strong></span>
+              return (
+                <div key={item} className={`bg-white p-6 rounded-2xl shadow-sm border-t-4 transition-all hover:shadow-md ${isLow ? 'border-t-red-500' : 'border-t-green-500'}`}>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-2 bg-gray-50 rounded-lg">
+                      <Package className={isLow ? 'text-red-500' : 'text-green-500'} size={24} />
+                    </div>
+                    {isLow && (
+                      <span className="flex items-center gap-1 text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded-full animate-pulse uppercase tracking-wider">
+                        <AlertCircle size={10} /> Low Stock
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="font-bold text-gray-800 text-lg mb-1 truncate">{item}</h3>
+                  <div className="flex items-baseline gap-1 mb-4">
+                    <span className="text-2xl font-black text-gray-900">{data.remaining.toFixed(1)}</span>
+                    <span className="text-gray-500 text-sm font-medium">{data.unit}</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Available Stock</span>
+                      <span>{Math.round(stockPercentage)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-1000 ${isLow ? 'bg-red-500' : 'bg-green-500'}`}
+                        style={{ width: `${Math.min(100, stockPercentage)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between text-[10px] text-gray-400 font-medium">
+                    <span>PURCHASED: {data.purchased.toFixed(1)} {data.unit}</span>
+                    <span>USED: {data.consumed.toFixed(1)} {data.unit}</span>
                   </div>
                 </div>
-              ))}
-              {Object.keys(inventoryData.details).length === 0 && (
-                <div className="text-center py-4 text-gray-500">No inventory data available. Add purchases to track inventory.</div>
-              )}
-            </div>
+              );
+            })}
+
+            {Object.keys(inventoryData.details).length === 0 && (
+              <div className="col-span-full bg-white p-12 rounded-2xl border-2 border-dashed border-gray-200 text-center">
+                <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                  <Package className="text-gray-300" size={32} />
+                </div>
+                <h3 className="text-gray-900 font-bold text-lg">No Inventory Data</h3>
+                <p className="text-gray-500 max-w-xs mx-auto mt-2">Start adding ingredient purchases to track your real-time stock levels automatically.</p>
+                <button
+                  onClick={() => setShowAddPurchase(true)}
+                  className="mt-6 text-orange-600 font-bold hover:underline"
+                >
+                  Add your first purchase →
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <h3 className="text-xl font-bold p-6 border-b">{t('admin.inventory.history')}</h3>
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr><th className="px-6 py-3">{t('admin.inventory.date')}</th><th className="px-6 py-3">{t('admin.inventory.itemName')}</th><th className="px-6 py-3">{t('admin.inventory.quantity')}</th><th className="px-6 py-3">{t('admin.inventory.unit')}</th><th className="px-6 py-3">{t('admin.inventory.price')}</th><th className="px-6 py-3">{t('admin.inventory.total')}</th></tr>
-              </thead>
-              <tbody>
-                {purchases.map(p => (
-                  <tr key={p.id} className="border-t">
-                    <td className="px-6 py-4">{new Date(p.date).toLocaleDateString()}</td>
-                    <td className="px-6 py-4">{p.itemName}</td>
-                    <td className="px-6 py-4">{p.quantity}</td>
-                    <td className="px-6 py-4">{p.unit}</td>
-                    <td className="px-6 py-4">₪{p.price}</td>
-                    <td className="px-6 py-4 font-bold">₪{p.totalCost}</td>
+          {/* Purchase History Table */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-50 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-900">{t('admin.inventory.history')}</h3>
+              <div className="flex gap-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                  <Filter size={20} />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                  <Download size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50/50">
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.inventory.date')}</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.inventory.itemName')}</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Supplier</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.inventory.quantity')}</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.inventory.price')}</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.inventory.total')}</th>
                   </tr>
-                ))}
-                {purchases.length === 0 && (
-                  <tr><td colSpan="6" className="text-center py-8 text-gray-500">No purchase records found</td></tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {purchases.map((p, idx) => (
+                    <tr key={p.id || idx} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="font-semibold text-gray-900">{p.itemName}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {p.supplier || '—'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold">
+                          {p.quantity} {p.unit}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">₪{p.price}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-green-600 font-black text-sm">₪{p.totalCost}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {purchases.length === 0 && (
+              <div className="text-center py-12 text-gray-400 italic">
+                No purchase records found
+              </div>
+            )}
           </div>
         </div>
       )}
+
 
       {/* SALARIES TAB */}
       {activeTab === 'salaries' && (
@@ -1550,8 +1719,8 @@ function AdminDashboard({ initialTab = 'overview' }) {
                   <td className="px-6 py-4">{u.email}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded text-xs ${u.role === 'admin' ? 'bg-red-100 text-red-800' :
-                        u.role === 'cashier' ? 'bg-green-100 text-green-800' :
-                          'bg-blue-100 text-blue-800'
+                      u.role === 'cashier' ? 'bg-green-100 text-green-800' :
+                        'bg-blue-100 text-blue-800'
                       }`}>
                       {u.role}
                     </span>
