@@ -63,7 +63,7 @@ function AccountingDashboard() {
       toast.error('Please fill all required fields');
       return;
     }
-    
+
     try {
       await addTransaction({
         type: newTransaction.type,
@@ -87,12 +87,12 @@ function AccountingDashboard() {
       toast.error('Please fill all required fields');
       return;
     }
-    
+
     try {
       await recordSalary(
-        salaryData.employeeName, 
-        parseFloat(salaryData.amount), 
-        salaryData.month, 
+        salaryData.employeeName,
+        parseFloat(salaryData.amount),
+        salaryData.month,
         salaryData.year
       );
       toast.success('Salary recorded successfully');
@@ -236,15 +236,13 @@ function AccountingDashboard() {
                     <td className="px-6 py-4 text-sm text-gray-900">{transaction.description}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{transaction.category || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        transaction.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${transaction.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
                         {transaction.type}
                       </span>
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${
-                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      }`}>
                       ₪{transaction.amount.toFixed(2)}
                     </td>
                   </tr>
@@ -265,7 +263,7 @@ function AccountingDashboard() {
                 <label className="block text-sm font-medium mb-2">{t('admin.accounting.type')}</label>
                 <select
                   value={newTransaction.type}
-                  onChange={(e) => setNewTransaction({...newTransaction, type: e.target.value})}
+                  onChange={(e) => setNewTransaction({ ...newTransaction, type: e.target.value })}
                   className="w-full border rounded-lg px-3 py-2"
                   required
                 >
@@ -279,7 +277,7 @@ function AccountingDashboard() {
                   type="number"
                   step="0.01"
                   value={newTransaction.amount}
-                  onChange={(e) => setNewTransaction({...newTransaction, amount: e.target.value})}
+                  onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
                   className="w-full border rounded-lg px-3 py-2"
                   required
                 />
@@ -289,7 +287,7 @@ function AccountingDashboard() {
                 <input
                   type="text"
                   value={newTransaction.description}
-                  onChange={(e) => setNewTransaction({...newTransaction, description: e.target.value})}
+                  onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
                   className="w-full border rounded-lg px-3 py-2"
                   required
                 />
@@ -299,7 +297,7 @@ function AccountingDashboard() {
                 <input
                   type="text"
                   value={newTransaction.category}
-                  onChange={(e) => setNewTransaction({...newTransaction, category: e.target.value})}
+                  onChange={(e) => setNewTransaction({ ...newTransaction, category: e.target.value })}
                   className="w-full border rounded-lg px-3 py-2"
                   placeholder="e.g., supplies, maintenance, etc."
                 />
@@ -335,7 +333,7 @@ function AccountingDashboard() {
                 <input
                   type="text"
                   value={salaryData.employeeName}
-                  onChange={(e) => setSalaryData({...salaryData, employeeName: e.target.value})}
+                  onChange={(e) => setSalaryData({ ...salaryData, employeeName: e.target.value })}
                   className="w-full border rounded-lg px-3 py-2"
                   required
                 />
@@ -346,7 +344,7 @@ function AccountingDashboard() {
                   type="number"
                   step="0.01"
                   value={salaryData.amount}
-                  onChange={(e) => setSalaryData({...salaryData, amount: e.target.value})}
+                  onChange={(e) => setSalaryData({ ...salaryData, amount: e.target.value })}
                   className="w-full border rounded-lg px-3 py-2"
                   required
                 />

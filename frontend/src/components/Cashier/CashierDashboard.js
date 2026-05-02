@@ -1180,6 +1180,7 @@ function CashierDashboard({ userRole }) {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [activeTab, setActiveTab] = useState('shawarma');
   const [amountReceived, setAmountReceived] = useState('');
+  const [customerType, setCustomerType] = useState('egyptian'); // 'egyptian' | 'foreigner'
   const [menuItems, setMenuItems] = useState({
     shawarma: [],
     plates: [],
@@ -1263,22 +1264,34 @@ function CashierDashboard({ userRole }) {
     }
   };
 
+  // Returns the correct price for the current customer type
+  const getItemPrice = (item) => {
+    if (customerType === 'foreigner' && item.foreignerPrice) {
+      return parseFloat(item.foreignerPrice);
+    }
+    return parseFloat(item.price || item.basePrice || 0);
+  };
+
   const addToCart = (item) => {
     if (!item.available) {
       toast.error(`${item.name} is currently unavailable`);
       return;
     }
 
+    const activePrice = getItemPrice(item);
+
     if (item.category === 'shawarma' || item.category === 'plates' || item.category === 'sandwiches') {
-      setSelectedItem(item);
+      setSelectedItem({ ...item, basePrice: activePrice });
       setCustomizations({ extras: [], notes: '', quantity: 1 });
       setShowCustomizeModal(true);
     } else {
       const cartItem = {
         ...item,
+        price: activePrice,
+        basePrice: activePrice,
         quantity: 1,
         extras: [],
-        totalPrice: item.price,
+        totalPrice: activePrice,
         customizations: {}
       };
       setCart([...cart, cartItem]);
@@ -1294,6 +1307,7 @@ function CashierDashboard({ userRole }) {
 
     const cartItem = {
       ...selectedItem,
+      price: selectedItem.basePrice,
       quantity: customizations.quantity,
       extras: customizations.extras,
       notes: customizations.notes,
@@ -1524,6 +1538,7 @@ function CashierDashboard({ userRole }) {
       paymentMethod,
       cashierName: 'Cashier',
       customerName: customerName || 'Walk-in Customer',
+      customerType,
       status: 'pending',
       orderNumber,
       createdAt: new Date().toISOString(),
@@ -1794,15 +1809,31 @@ function CashierDashboard({ userRole }) {
                         <Scale size={14} />
                         <span>{item.weight}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <DollarSign size={14} />
-                        <span>₪{item.price}</span>
+                      {/* Dual Pricing Display */}
+                      <div className="mt-1">
+                        {item.foreignerPrice ? (
+                          <div className="flex items-center gap-2">
+                            <span className={`font-bold text-sm px-1.5 py-0.5 rounded ${
+                              customerType === 'egyptian' ? 'bg-red-100 text-red-700' : 'text-gray-400 line-through'
+                            }`}>🇪🇬 ₪{item.price}</span>
+                            <span className={`font-bold text-sm px-1.5 py-0.5 rounded ${
+                              customerType === 'foreigner' ? 'bg-blue-100 text-blue-700' : 'text-gray-400 line-through'
+                            }`}>🌍 ₪{item.foreignerPrice}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <DollarSign size={14} />
+                            <span>₪{item.price}</span>
+                          </div>
+                        )}
                       </div>
                       {item.includes && (
                         <p className="text-xs text-green-600 mt-2">{item.includes}</p>
                       )}
-                      <button className="mt-3 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 w-full text-sm">
-                        {t('cashier.addToOrder')}
+                      <button className={`mt-3 text-white px-3 py-1 rounded w-full text-sm ${
+                        customerType === 'foreigner' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'
+                      }`}>
+                        {t('cashier.addToOrder')} — ₪{getItemPrice(item)}
                       </button>
                     </div>
                   ))
@@ -1822,6 +1853,36 @@ function CashierDashboard({ userRole }) {
             <div className="flex items-center mb-4">
               <ShoppingCart className="mr-2" />
               <h2 className="text-2xl font-bold">{t('cashier.currentOrder')}</h2>
+            </div>
+
+            {/* Customer Type Toggle */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Customer Type</label>
+              <div className="flex rounded-lg overflow-hidden border border-gray-200">
+                <button
+                  onClick={() => { setCustomerType('egyptian'); setCart([]); }}
+                  className={`flex-1 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-1 ${
+                    customerType === 'egyptian'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  🇪🇬 Egyptian
+                </button>
+                <button
+                  onClick={() => { setCustomerType('foreigner'); setCart([]); }}
+                  className={`flex-1 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-1 ${
+                    customerType === 'foreigner'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  🌍 Foreigner
+                </button>
+              </div>
+              {cart.length > 0 && (
+                <p className="text-xs text-orange-500 mt-1">⚠️ Changing type clears the cart.</p>
+              )}
             </div>
 
             <div className="mb-4">
@@ -2093,10 +2154,12 @@ function CashierDashboard({ userRole }) {
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.target);
+              const foreignerPriceRaw = formData.get('foreignerPrice');
               const itemData = {
                 id: editingItem?.id,
                 name: formData.get('name'),
                 price: parseFloat(formData.get('price')),
+                foreignerPrice: foreignerPriceRaw ? parseFloat(foreignerPriceRaw) : null,
                 weight: formData.get('weight'),
                 category: formData.get('category'),
                 includes: formData.get('includes') || '',
@@ -2160,7 +2223,7 @@ function CashierDashboard({ userRole }) {
               </div>
 
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Price (₪)</label>
+                <label className="block font-semibold mb-2">Egyptian Price (₪) 🇪🇬</label>
                 <input
                   type="number"
                   name="price"
@@ -2168,6 +2231,19 @@ function CashierDashboard({ userRole }) {
                   step="0.01"
                   defaultValue={editingItem?.price || ''}
                   className="w-full border rounded-lg px-3 py-2"
+                  placeholder="e.g., 140"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block font-semibold mb-2">Foreigner Price (₪) 🌍 <span className="text-xs font-normal text-gray-400">(leave blank to use same price)</span></label>
+                <input
+                  type="number"
+                  name="foreignerPrice"
+                  step="0.01"
+                  defaultValue={editingItem?.foreignerPrice || ''}
+                  className="w-full border rounded-lg px-3 py-2"
+                  placeholder="e.g., 250"
                 />
               </div>
 
