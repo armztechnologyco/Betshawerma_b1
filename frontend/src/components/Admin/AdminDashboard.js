@@ -577,9 +577,9 @@ function AdminDashboard({ initialTab = 'overview' }) {
     setEditingItem(null);
     setImagePreview(null);
     setEditForm({
-      name: '', price: '', weight: '', weightInKg: '',
+      name: '', price: '', foreignerPrice: '', weight: '', weightInKg: '',
       linkedInventoryItem: '',
-      preparationTime: 5, // Add default value
+      preparationTime: 5,
       image: '', imageFile: null, basePrice: '', includes: '',
       category: selectedCategory, available: true
     });
@@ -610,10 +610,11 @@ function AdminDashboard({ initialTab = 'overview' }) {
     setEditForm({
       name: item.name,
       price: item.price,
+      foreignerPrice: item.foreignerPrice || '',
       weight: item.weight,
       weightInKg: item.weightInKg || '',
       linkedInventoryItem: item.linkedInventoryItem || '',
-      preparationTime: item.preparationTime || 5, // Add this
+      preparationTime: item.preparationTime || 5,
       image: item.image,
       imageFile: null,
       basePrice: item.basePrice,
@@ -694,10 +695,11 @@ function AdminDashboard({ initialTab = 'overview' }) {
     const itemData = {
       name: editForm.name,
       price: parseFloat(editForm.price),
+      foreignerPrice: editForm.foreignerPrice ? parseFloat(editForm.foreignerPrice) : null,
       weight: editForm.weight,
       weightInKg: parseFloat(editForm.weightInKg) || 0,
       linkedInventoryItem: editForm.linkedInventoryItem || '',
-      preparationTime: parseInt(editForm.preparationTime) || 5, // Add preparation time
+      preparationTime: parseInt(editForm.preparationTime) || 5,
       image: editForm.image || '🍽️',
       basePrice: parseFloat(editForm.basePrice || editForm.price),
       includes: editForm.includes,
@@ -1937,14 +1939,30 @@ function AdminDashboard({ initialTab = 'overview' }) {
                 required
               />
 
-              <input
-                type="number"
-                placeholder={t('admin.inventory.price')}
-                className="w-full border rounded px-3 py-2 mb-3"
-                value={editForm.price}
-                onChange={e => setEditForm({ ...editForm, price: e.target.value })}
-                required
-              />
+              <div className="mb-3">
+                <label className="block text-sm font-medium mb-1">🇪🇬 Egyptian Price (₪) <span className="text-red-500">*</span></label>
+                <input
+                  type="number"
+                  placeholder="e.g., 140"
+                  step="0.01"
+                  className="w-full border rounded px-3 py-2"
+                  value={editForm.price}
+                  onChange={e => setEditForm({ ...editForm, price: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="block text-sm font-medium mb-1">🌍 Foreigner Price (₪) <span className="text-gray-400 font-normal text-xs">(leave blank to use same price)</span></label>
+                <input
+                  type="number"
+                  placeholder="e.g., 250"
+                  step="0.01"
+                  className="w-full border rounded px-3 py-2"
+                  value={editForm.foreignerPrice}
+                  onChange={e => setEditForm({ ...editForm, foreignerPrice: e.target.value })}
+                />
+              </div>
 
               <input
                 type="text"
