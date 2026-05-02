@@ -408,6 +408,32 @@ export const subscribeToPurchases = (callback) => {
   });
 };
 
+// Delete purchase
+export const deletePurchase = async (purchaseId) => {
+  try {
+    await deleteDoc(doc(db, 'purchases', purchaseId));
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting purchase:', error);
+    throw error;
+  }
+};
+
+// Update purchase
+export const updatePurchase = async (purchaseId, purchaseData) => {
+  try {
+    const purchaseRef = doc(db, 'purchases', purchaseId);
+    await updateDoc(purchaseRef, {
+      ...purchaseData,
+      updatedAt: new Date().toISOString()
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating purchase:', error);
+    throw error;
+  }
+};
+
 // Subscribe to transactions (real-time updates)
 export const subscribeToTransactions = (callback) => {
   const transactionsRef = collection(db, 'transactions');

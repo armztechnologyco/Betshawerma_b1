@@ -113,7 +113,16 @@
       "totalOrders": "إجمالي الطلبات",
       "pendingOrders": "طلبات معلقة",
       "netProfit": "صافي الربح",
-      "recentActivity": "النشاط الأخير"
+      "recentActivity": "النشاط الأخير",
+      "onlineStaff": "الموظفون المتصلون",
+      "liveMonitor": "مراقب الطلبات المباشر",
+      "realtime": "تحديث مباشر",
+      "noActiveOrders": "لا توجد طلبات نشطة حالياً",
+      "online": "متصل",
+      "offline": "غير متصل",
+      "items": "أصناف",
+      "welcome": "أهلاً بك",
+      "walkIn": "زبون خارجي"
     },
     "inventory": {
       "title": "المخزون والمشتريات",
@@ -184,6 +193,46 @@
       "confirmDeleteUser": "هل أنت متأكد من حذف هذا المستخدم؟",
       "success": "تمت العملية بنجاح",
       "failed": "فشلت العملية"
+    },
+    "inventory_drilldown": {
+      "title": "سجل تفاصيل الاستهلاك",
+      "subtitle": "سجل تفاصيل تاريخ الاستهلاك",
+      "log": "سجل مفصل",
+      "order": "طلب",
+      "menuItem": "صنف المنيو",
+      "qty": "كمية",
+      "consumed": "مستهلك",
+      "date": "التاريخ",
+      "close": "إغلاق التقرير",
+      "no_records": "لم يتم العثور على سجلات استهلاك لهذا الصنف.",
+      "total_purchased": "إجمالي المشتريات",
+      "total_consumed": "إجمالي المستهلك",
+      "remaining_stock": "المخزون المتبقي"
     }
+  },
+  "reports": {
+    "delayed": "متأخر",
+    "on_time": "في الوقت المحدد",
+    "expected": "المتوقع",
+    "actual": "الفعلي",
+    "timing_analysis": "تحليل التوقيت",
+    "order_items": "أصناف الطلب",
+    "no_items": "لا توجد تفاصيل أصناف متوفرة.",
+    "close": "إغلاق"
+  },
+  "kitchen": {
+    "completeOrder": "إتمام الطلب",
+    "markReady": "جاهز",
+    "noActive": "لا توجد طلبات نشطة حالياً."
+  },
+  "menu_edit": {
+    "weight_kg": "الوزن بالكجم (للمخزون)",
+    "no_inventory_link": "-- لا يوجد ربط بالمخزون --",
+    "prep_time": "وقت التحضير (دقائق)",
+    "prep_time_desc": "كم من الوقت يستغرق تحضير هذا الصنف (سيظهر العد التنازلي في المطبخ)",
+    "item_image": "صورة الصنف",
+    "upload_image": "رفع صورة",
+    "includes": "يحتوي على (مثلاً: بطاطس + مشروب)",
+    "available_for_sale": "متوفر للبيع"
   }
 }

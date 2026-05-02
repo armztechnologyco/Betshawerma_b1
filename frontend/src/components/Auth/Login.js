@@ -39,9 +39,9 @@ function Login() {
   };
 
   const demoAccounts = [
-    { role: 'Admin', email: 'admin@shawarma.com', password: 'admin123', page: 'Admin Dashboard' },
-    { role: 'Cashier', email: 'cashier@shawarma.com', password: 'cashier123', page: 'Cashier Page' },
-    { role: 'Chef', email: 'chef@shawarma.com', password: 'chef123', page: 'Kitchen Page' }
+    { role: t('admin.tabs.users'), email: 'admin@shawarma.com', password: 'admin123', page: t('admin.dashboard') },
+    { role: t('cashier.receipt.cashier'), email: 'cashier@shawarma.com', password: 'cashier123', page: t('cashier.dashboard') },
+    { role: t('kitchen.title'), email: 'chef@shawarma.com', password: 'chef123', page: t('kitchen.title') }
   ];
 
   const fillDemoAccount = (email, password) => {

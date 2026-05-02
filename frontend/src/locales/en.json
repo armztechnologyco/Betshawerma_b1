@@ -113,7 +113,16 @@
       "totalOrders": "Total Orders",
       "pendingOrders": "Pending Orders",
       "netProfit": "Net Profit",
-      "recentActivity": "Recent Activity"
+      "recentActivity": "Recent Activity",
+      "onlineStaff": "Online Staff",
+      "liveMonitor": "Live Order Monitor",
+      "realtime": "Real-time Updates",
+      "noActiveOrders": "No active orders right now",
+      "online": "Online",
+      "offline": "Offline",
+      "items": "items",
+      "welcome": "Welcome",
+      "walkIn": "Walk-in"
     },
     "inventory": {
       "title": "Inventory & Purchases",
@@ -184,6 +193,46 @@
       "confirmDeleteUser": "Are you sure you want to delete this user?",
       "success": "Operation successful",
       "failed": "Operation failed"
+    },
+    "inventory_drilldown": {
+      "title": "Consumption Detail History",
+      "subtitle": "Detailed consumption history log",
+      "log": "Detailed Log",
+      "order": "Order",
+      "menuItem": "Menu Item",
+      "qty": "Qty",
+      "consumed": "Consumed",
+      "date": "Date",
+      "close": "Close Report",
+      "no_records": "No consumption records found for this item.",
+      "total_purchased": "Total Purchased",
+      "total_consumed": "Total Consumed",
+      "remaining_stock": "Remaining Stock"
     }
+  },
+  "reports": {
+    "delayed": "Delayed",
+    "on_time": "On Time",
+    "expected": "Expected",
+    "actual": "Actual",
+    "timing_analysis": "Timing Analysis",
+    "order_items": "Order Items",
+    "no_items": "No items details available.",
+    "close": "Close"
+  },
+  "kitchen": {
+    "completeOrder": "Complete Order",
+    "markReady": "Mark Ready",
+    "noActive": "No active orders currently."
+  },
+  "menu_edit": {
+    "weight_kg": "Weight in kg (for inventory)",
+    "no_inventory_link": "-- No Inventory Link --",
+    "prep_time": "Preparation Time (minutes)",
+    "prep_time_desc": "How long this item takes to prepare (will show countdown in kitchen)",
+    "item_image": "Item Image",
+    "upload_image": "Upload Image",
+    "includes": "Includes (e.g., Fries + Drink)",
+    "available_for_sale": "Available for sale"
   }
 }
