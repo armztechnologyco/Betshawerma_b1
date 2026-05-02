@@ -75,6 +75,8 @@ export const loginUser = async (email, password) => {
 export const logoutUser = async () => {
   try {
     await signOut(auth);
+    // Clear shift warning status on logout so it can show again in next login
+    sessionStorage.removeItem('shiftWarningShown');
     return { success: true };
   } catch (error) {
     console.error('Error logging out:', error);
@@ -125,6 +127,18 @@ export const getAllUsers = async () => {
   } catch (error) {
     console.error('Error fetching users:', error);
     throw error;
+  }
+};
+
+// Update user active status
+export const updateUserActiveStatus = async (uid) => {
+  if (!uid) return;
+  try {
+    await setDoc(doc(db, 'users', uid), { 
+      lastActive: new Date().toISOString() 
+    }, { merge: true });
+  } catch (error) {
+    console.error('Error updating active status:', error);
   }
 };
 

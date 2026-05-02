@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
-import { getCurrentUser, logoutUser } from './services/authService';
+import { getCurrentUser, logoutUser, updateUserActiveStatus } from './services/authService';
 
 import Login from './components/Auth/Login';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -38,6 +38,17 @@ function App() {
     await logoutUser();
     setUser(null);
   };
+
+  // Heartbeat to keep user "Online"
+  useEffect(() => {
+    if (user) {
+      updateUserActiveStatus(user.uid);
+      const interval = setInterval(() => {
+        updateUserActiveStatus(user.uid);
+      }, 60000); // Every 60 seconds
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   if (loading) {
     return (

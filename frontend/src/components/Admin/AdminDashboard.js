@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +8,7 @@ import {
   Edit2, Trash2, Save, AlertCircle, Plus, Minus,
   Scale, DollarSign, Upload, Package, Calendar,
   FileText, Filter, Download, Eye, Beef, Salad, 
-  Sandwich, Coffee, Droplet
+  Sandwich, Coffee, Droplet, History
 } from 'lucide-react';
 import { getCurrentUser, logoutUser, getAllUsers, registerUser, USER_ROLES } from '../../services/authService';
 import { 
@@ -24,7 +23,7 @@ import {
   deleteMenuItem 
 } from '../../services/menuService';
 import { db } from '../../firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy, onSnapshot } from 'firebase/firestore';
 
 function AdminDashboard({ initialTab = 'overview' }) {
   const { t } = useTranslation();
@@ -116,6 +115,11 @@ function AdminDashboard({ initialTab = 'overview' }) {
     details: {}
   });
 
+  // Inventory categories state
+  const [inventoryCategories, setInventoryCategories] = useState([]);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
   // Salaries state
   const [salaries, setSalaries] = useState([]);
 
@@ -165,32 +169,57 @@ function AdminDashboard({ initialTab = 'overview' }) {
   // Load data on mount
   useEffect(() => {
     loadAdminData();
-    loadPurchases();
+    // loadPurchases(); // Now handled by real-time subscription
     loadSalaries();
   }, []);
 
   useEffect(() => {
     if (activeTab === 'accounting') loadAccountingData();
-    if (activeTab === 'kitchen') {
+    if (activeTab === 'kitchen' || activeTab === 'overview') {
       const unsubscribe = subscribeToKitchenOrders(setKitchenOrders);
       return () => unsubscribe();
     }
-    if (activeTab === 'purchases') {
-      calculateInventory();
+    if (activeTab === 'purchases' || activeTab === 'overview') {
+      // Real-time purchases
+      const qPurchases = query(collection(db, 'purchases'), orderBy('createdAt', 'desc'));
+      const unsubscribePurchases = onSnapshot(qPurchases, (pSnapshot) => {
+        const pData = pSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setPurchases(pData);
+        
+        // Real-time orders
+        const qOrders = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+        const unsubscribeOrders = onSnapshot(qOrders, (oSnapshot) => {
+          const oData = oSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          calculateInventory(oData, pData);
+        });
+      });
+      return () => {
+        // Cleanup would need to handle both, but for simplicity:
+      };
     }
     if (activeTab === 'reports') {
       generateReport();
     }
   }, [activeTab, selectedMonth, selectedYear, purchases]);
 
-  // Subscribe to menu changes
+  // Subscribe to menu changes and real-time inventory categories
   useEffect(() => {
-    const unsubscribe = subscribeToMenu((data) => {
+    const unsubscribeMenu = subscribeToMenu((data) => {
       if (data && Object.keys(data).length > 0) {
         setMenuItems(data);
       }
     });
-    return () => unsubscribe();
+
+    // Real-time inventory categories
+    const qCats = query(collection(db, 'inventory_categories'), orderBy('name', 'asc'));
+    const unsubscribeCats = onSnapshot(qCats, (snapshot) => {
+      setInventoryCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    return () => {
+      unsubscribeMenu();
+      unsubscribeCats();
+    };
   }, []);
 useEffect(() => {
   if (activeTab === 'kitchen') {
@@ -260,6 +289,39 @@ const startPreparation = (orderId, items) => {
   toast.success(`Started preparing order #${orderId}`);
 };
 
+const parseWeightToKg = (val) => {
+  if (!val) return 0;
+  const str = val.toString().toLowerCase();
+  const match = str.match(/([\d.]+)\s*(g|kg)/i);
+  if (match) {
+    const num = parseFloat(match[1]);
+    const unit = match[2];
+    return unit === 'g' ? num / 1000 : num;
+  }
+  // If just a number, assume KG
+  return parseFloat(str) || 0;
+};
+
+const deletePurchase = async (id) => {
+  if (!window.confirm('Delete this purchase record?')) return;
+  try {
+    await deleteDoc(doc(db, 'purchases', id));
+    toast.success('Purchase deleted');
+  } catch (error) {
+    toast.error('Failed to delete purchase');
+  }
+};
+
+const deleteCategory = async (id) => {
+  if (!window.confirm('Delete this category?')) return;
+  try {
+    await deleteDoc(doc(db, 'inventory_categories', id));
+    toast.success('Category deleted');
+  } catch (error) {
+    toast.error('Failed to delete category');
+  }
+};
+
 // Function to format time (MM:SS)
 const formatTime = (seconds) => {
   const mins = Math.floor(seconds / 60);
@@ -287,41 +349,33 @@ const getProgressPercentage = (remaining, total) => {
   };
 
   // Calculate inventory based on purchases and orders
-  const calculateInventory = () => {
-    const savedOrders = JSON.parse(localStorage.getItem('orders')) || [];
+  const calculateInventory = (ordersData = [], currentPurchases = purchases) => {
+    // If ordersData is empty, try to get from reportData or localStorage
+    const ordersToProcess = ordersData.length > 0 ? ordersData : (JSON.parse(localStorage.getItem('orders')) || []);
     
     const purchasedByItem = {};
-    purchases.forEach(purchase => {
-      const itemKey = purchase.itemName;
-      if (!purchasedByItem[itemKey]) {
-        purchasedByItem[itemKey] = 0;
-      }
-      purchasedByItem[itemKey] += purchase.quantity;
+    const consumedByItem = {};
+    const displayNames = {}; // Map to keep original casing for display
+
+    currentPurchases.forEach(purchase => {
+      const originalName = purchase.itemName;
+      const itemKey = originalName?.trim().toLowerCase();
+      if (!itemKey) return;
+      
+      displayNames[itemKey] = originalName;
+      purchasedByItem[itemKey] = (purchasedByItem[itemKey] || 0) + purchase.quantity;
     });
 
-    const consumedByItem = {};
-    savedOrders.forEach(order => {
+    ordersToProcess.forEach(order => {
       order.items?.forEach(item => {
-        if (item.weightInKg && item.weightInKg > 0) {
-          const consumedKg = item.weightInKg * item.quantity;
-          
-          let inventoryKey = '';
-          if (item.linkedInventoryItem) {
-            inventoryKey = item.linkedInventoryItem;
-          } else if (item.name.toLowerCase().includes('chicken')) {
-            inventoryKey = 'Chicken Meat';
-          } else if (item.name.toLowerCase().includes('beef')) {
-            inventoryKey = 'Beef Meat';
-          } else if (item.name.toLowerCase().includes('meat')) {
-            inventoryKey = 'Meat';
-          } else {
-            return;
-          }
-          
-          if (!consumedByItem[inventoryKey]) {
-            consumedByItem[inventoryKey] = 0;
-          }
-          consumedByItem[inventoryKey] += consumedKg;
+        const weight = item.weightInKg || 0;
+        const originalName = item.linkedInventoryItem;
+        const inventoryKey = originalName?.trim().toLowerCase();
+        
+        if (weight > 0 && inventoryKey) {
+          displayNames[inventoryKey] = originalName;
+          const consumedKg = weight * item.quantity;
+          consumedByItem[inventoryKey] = (consumedByItem[inventoryKey] || 0) + consumedKg;
         }
       });
     });
@@ -330,12 +384,15 @@ const getProgressPercentage = (remaining, total) => {
     let totalPurchased = 0;
     let totalConsumed = 0;
     
-    Object.keys(purchasedByItem).forEach(item => {
-      const purchased = purchasedByItem[item];
-      const consumed = consumedByItem[item] || 0;
+    // Combine all keys from both purchased and consumed
+    const allKeys = new Set([...Object.keys(purchasedByItem), ...Object.keys(consumedByItem)]);
+    
+    allKeys.forEach(key => {
+      const purchased = purchasedByItem[key] || 0;
+      const consumed = consumedByItem[key] || 0;
       const remaining = purchased - consumed;
       
-      details[item] = {
+      details[displayNames[key] || key] = {
         purchased: purchased,
         consumed: consumed,
         remaining: remaining
@@ -353,30 +410,46 @@ const getProgressPercentage = (remaining, total) => {
     });
   };
 
-  const savePurchase = () => {
+  const savePurchase = async () => {
     if (!purchaseForm.itemName || !purchaseForm.quantity || !purchaseForm.price) {
       toast.error('Please fill all required fields');
       return;
     }
 
-    const newPurchase = {
-      id: Date.now(),
-      ...purchaseForm,
-      quantity: parseFloat(purchaseForm.quantity),
-      price: parseFloat(purchaseForm.price),
-      totalCost: parseFloat(purchaseForm.quantity) * parseFloat(purchaseForm.price),
-      date: new Date().toISOString(),
-      createdAt: new Date().toISOString()
-    };
+    try {
+      const newPurchase = {
+        ...purchaseForm,
+        quantity: parseFloat(purchaseForm.quantity),
+        price: parseFloat(purchaseForm.price),
+        totalCost: parseFloat(purchaseForm.quantity) * parseFloat(purchaseForm.price),
+        date: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      };
 
-    const updatedPurchases = [...purchases, newPurchase];
-    setPurchases(updatedPurchases);
-    localStorage.setItem('purchases', JSON.stringify(updatedPurchases));
-    
-    calculateInventory();
-    toast.success('Purchase added successfully');
-    setShowAddPurchase(false);
-    setPurchaseForm({ itemName: '', quantity: '', unit: 'kg', price: '', supplier: '' });
+      await addDoc(collection(db, 'purchases'), newPurchase);
+      
+      toast.success('Purchase added successfully');
+      setShowAddPurchase(false);
+      setPurchaseForm({ itemName: '', quantity: '', unit: 'kg', price: '', supplier: '' });
+    } catch (error) {
+      toast.error('Failed to add purchase');
+      console.error(error);
+    }
+  };
+
+  const saveCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    try {
+      await addDoc(collection(db, 'inventory_categories'), {
+        name: newCategoryName.trim(),
+        createdAt: new Date().toISOString()
+      });
+      setNewCategoryName('');
+      setShowAddCategory(false);
+      toast.success('Category added');
+    } catch (error) {
+      toast.error('Failed to add category');
+    }
   };
 
   const saveSalary = () => {
@@ -806,41 +879,163 @@ const handleEditItem = (item) => {
        {/* className="container mx-auto px-4 py-8"> */}
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div 
-              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all"
-              onClick={() => setActiveTab('reports')}
-            >
-              <h3 className="text-lg font-semibold text-gray-700">{t('admin.overview.totalSales')}</h3>
-              <p className="text-3xl font-bold text-green-600 mt-2">₪{stats.todayRevenue || 0}</p>
-              <p className="text-xs text-gray-400 mt-2">Click to view details</p>
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div 
+                className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all border-b-4 border-green-500"
+                onClick={() => setActiveTab('reports')}
+              >
+                <h3 className="text-lg font-semibold text-gray-700">{t('admin.overview.totalSales')}</h3>
+                <p className="text-3xl font-bold text-green-600 mt-2">₪{stats.todayRevenue || 0}</p>
+                <p className="text-xs text-gray-400 mt-2">Click to view details</p>
+              </div>
+              
+              <div 
+                className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all border-b-4 border-blue-500"
+                onClick={() => setActiveTab('reports')}
+              >
+                <h3 className="text-lg font-semibold text-gray-700">{t('admin.overview.totalOrders')}</h3>
+                <p className="text-3xl font-bold text-blue-600 mt-2">{stats.totalOrdersToday || 0}</p>
+                <p className="text-xs text-gray-400 mt-2">Click to view details</p>
+              </div>
+              
+              <div 
+                className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all border-b-4 border-orange-500"
+                onClick={() => setActiveTab('kitchen')}
+              >
+                <h3 className="text-lg font-semibold text-gray-700">{t('admin.overview.pendingOrders')}</h3>
+                <p className="text-3xl font-bold text-orange-600 mt-2">{(stats.pendingOrders || 0) + (stats.preparingOrders || 0)}</p>
+                <p className="text-xs text-gray-400 mt-2">Click to view kitchen</p>
+              </div>
+              
+              <div 
+                className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all border-b-4 border-purple-500"
+                onClick={() => setActiveTab('users')}
+              >
+                <h3 className="text-lg font-semibold text-gray-700">{t('admin.users.title')}</h3>
+                <div className="flex items-baseline gap-2 mt-2">
+                  <p className="text-3xl font-bold text-purple-600">{users.length}</p>
+                  {(() => {
+                    const onlineCount = users.filter(u => u.lastActive && (new Date() - new Date(u.lastActive)) < 5 * 60 * 1000).length;
+                    return onlineCount > 0 && (
+                      <div className="flex items-center gap-1 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
+                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                        <span className="text-[10px] text-green-700 font-black uppercase tracking-tighter">
+                          {onlineCount} Online
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+                <p className="text-xs text-gray-400 mt-2">Click to manage users</p>
+              </div>
             </div>
-            
-            <div 
-              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all"
-              onClick={() => setActiveTab('reports')}
-            >
-              <h3 className="text-lg font-semibold text-gray-700">{t('admin.overview.totalOrders')}</h3>
-              <p className="text-3xl font-bold text-blue-600 mt-2">{stats.totalOrdersToday || 0}</p>
-              <p className="text-xs text-gray-400 mt-2">Click to view details</p>
-            </div>
-            
-            <div 
-              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all"
-              onClick={() => setActiveTab('kitchen')}
-            >
-              <h3 className="text-lg font-semibold text-gray-700">{t('admin.overview.pendingOrders')}</h3>
-              <p className="text-3xl font-bold text-orange-600 mt-2">{(stats.pendingOrders || 0) + (stats.preparingOrders || 0)}</p>
-              <p className="text-xs text-gray-400 mt-2">Click to view kitchen</p>
-            </div>
-            
-            <div 
-              className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all"
-              onClick={() => setActiveTab('users')}
-            >
-              <h3 className="text-lg font-semibold text-gray-700">{t('admin.users.title')}</h3>
-              <p className="text-3xl font-bold text-purple-600 mt-2">{users.length}</p>
-              <p className="text-xs text-gray-400 mt-2">Click to manage users</p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Live Orders Monitor */}
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <div className="absolute inset-0 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-800">Live Orders Monitor</h3>
+                  </div>
+                  <button 
+                    onClick={() => setActiveTab('kitchen')}
+                    className="text-blue-500 text-sm font-semibold hover:text-blue-700 flex items-center gap-1"
+                  >
+                    View Kitchen <ChefHat size={14} />
+                  </button>
+                </div>
+
+                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                  {kitchenOrders.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                      <ChefHat size={40} className="mx-auto text-gray-300 mb-3" />
+                      <p className="text-gray-500 font-medium italic">No active orders right now.</p>
+                    </div>
+                  ) : (
+                    kitchenOrders.map(order => (
+                      <div key={order.id} className="border border-gray-100 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${order.status === 'preparing' ? 'bg-blue-500' : 'bg-yellow-500'}`}></div>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-black text-lg text-gray-800">Order #{order.orderNumber}</p>
+                            <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                              <LayoutDashboard size={10} />
+                              {new Date(order.createdAt).toLocaleTimeString()}
+                            </p>
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${order.status === 'preparing' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                            {order.status}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {order.items?.map((item, idx) => (
+                            <span key={idx} className="bg-gray-50 text-gray-700 px-2 py-1 rounded text-xs border border-gray-100">
+                              <span className="font-bold text-orange-600 mr-1">{item.quantity}x</span> {item.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* System Users List */}
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Users size={20} className="text-purple-600" />
+                  </div>
+                  System Users & Roles
+                </h3>
+                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                  {users.map(u => {
+                    const isOnline = u.lastActive && (new Date() - new Date(u.lastActive)) < 5 * 60 * 1000;
+                    return (
+                      <div key={u.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-transparent hover:border-purple-200 transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            <div className="w-12 h-12 bg-white text-purple-600 rounded-full flex items-center justify-center font-black text-lg shadow-sm border border-purple-100">
+                              {u.name?.[0].toUpperCase() || 'U'}
+                            </div>
+                            {isOnline && (
+                              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-gray-800">{u.name}</p>
+                              {u.name === user?.name && (
+                                <span className="bg-green-100 text-green-700 text-[9px] px-1.5 py-0.5 rounded font-black uppercase">YOU</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 font-medium">{u.email}</p>
+                            {isOnline ? (
+                              <p className="text-[10px] text-green-600 font-bold flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Online Now
+                              </p>
+                            ) : (
+                              <p className="text-[10px] text-gray-400">
+                                Last seen: {u.lastActive ? new Date(u.lastActive).toLocaleTimeString() : 'Never'}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-tight ${u.role === 'admin' ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}`}>
+                            {u.role}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -1069,17 +1264,25 @@ const handleEditItem = (item) => {
         return total + ((item.preparationTime || 5) * item.quantity);
       }, 0) || 5;
       
+      const actualDuration = (new Date() - new Date(order.createdAt)) / (1000 * 60);
+      const isDelayed = actualDuration > totalPrepTime;
+      
       return (
-        <div key={order.id} className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-yellow-500">
+        <div key={order.id} className={`bg-white rounded-lg shadow-lg p-6 border-l-8 ${isDelayed ? 'border-red-600' : 'border-yellow-500'} relative overflow-hidden transition-all hover:shadow-xl`}>
+          {isDelayed && (
+            <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-bl-lg animate-pulse uppercase tracking-widest z-10">
+              ⚠️ Delayed by {Math.round(actualDuration - totalPrepTime)} min
+            </div>
+          )}
           <div className="flex justify-between items-start mb-3">
             <h3 className="text-xl font-bold">Order #{order.orderNumber}</h3>
-            <span className={`px-2 py-1 rounded text-xs ${
+            <span className={`px-2 py-1 rounded text-xs font-bold ${
               order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
               order.status === 'preparing' ? 'bg-blue-100 text-blue-800' :
               order.status === 'ready' ? 'bg-green-100 text-green-800' :
               'bg-gray-100 text-gray-800'
             }`}>
-              {order.status}
+              {order.status.toUpperCase()}
             </span>
           </div>
           
@@ -1179,9 +1382,14 @@ const handleEditItem = (item) => {
           <div>
             <div className="flex justify-between mb-6">
               <h2 className="text-2xl font-bold">{t('admin.inventory.title')}</h2>
-              <button onClick={() => setShowAddPurchase(true)} className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                <Plus size={18} /> {t('admin.inventory.addPurchase')}
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setShowAddCategory(true)} className="bg-purple-500 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                  <Plus size={18} /> Add Category
+                </button>
+                <button onClick={() => setShowAddPurchase(true)} className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                  <Plus size={18} /> {t('admin.inventory.addPurchase')}
+                </button>
+              </div>
             </div>
             
             <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -1201,21 +1409,40 @@ const handleEditItem = (item) => {
                 </div>
               </div>
               
-              <h4 className="font-semibold mb-3">Detailed Breakdown</h4>
-              <div className="space-y-2">
-                {Object.entries(inventoryData.details).map(([item, data]) => (
-                  <div key={item} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="font-medium">{item}</span>
-                    <div className="flex gap-4 text-sm">
-                      <span>Purchased: <strong>{data.purchased.toFixed(2)} kg</strong></span>
-                      <span className="text-orange-600">Consumed: <strong>{data.consumed.toFixed(2)} kg</strong></span>
-                      <span className="text-green-600">Remaining: <strong>{data.remaining.toFixed(2)} kg</strong></span>
+              <h4 className="font-semibold mb-3 flex justify-between items-center">
+                <span>Detailed Breakdown & Categories</span>
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Stock Levels</p>
+                  {Object.entries(inventoryData.details).map(([item, data]) => (
+                    <div key={item} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <span className="font-medium">{item}</span>
+                      <div className="flex gap-4 text-sm">
+                        <span>Purchased: <strong>{data.purchased.toFixed(2)} kg</strong></span>
+                        <span className="text-orange-600">Consumed: <strong>{data.consumed.toFixed(2)} kg</strong></span>
+                        <span className="text-green-600">Remaining: <strong>{data.remaining.toFixed(2)} kg</strong></span>
+                      </div>
                     </div>
+                  ))}
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Manage Categories</p>
+                  <div className="flex flex-wrap gap-2">
+                    {inventoryCategories.map(cat => (
+                      <div key={cat.id} className="flex items-center gap-2 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full border border-purple-100 font-bold text-sm">
+                        {cat.name}
+                        <button onClick={() => deleteCategory(cat.id)} className="hover:text-red-500 transition-colors">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    {inventoryCategories.length === 0 && (
+                      <p className="text-sm text-gray-400 italic">No custom categories added yet.</p>
+                    )}
                   </div>
-                ))}
-                {Object.keys(inventoryData.details).length === 0 && (
-                  <div className="text-center py-4 text-gray-500">No inventory data available. Add purchases to track inventory.</div>
-                )}
+                </div>
               </div>
             </div>
 
@@ -1223,7 +1450,15 @@ const handleEditItem = (item) => {
               <h3 className="text-xl font-bold p-6 border-b">{t('admin.inventory.history')}</h3>
               <table className="w-full">
                 <thead className="bg-gray-50">
-                  <tr><th className="px-6 py-3">{t('admin.inventory.date')}</th><th className="px-6 py-3">{t('admin.inventory.itemName')}</th><th className="px-6 py-3">{t('admin.inventory.quantity')}</th><th className="px-6 py-3">{t('admin.inventory.unit')}</th><th className="px-6 py-3">{t('admin.inventory.price')}</th><th className="px-6 py-3">{t('admin.inventory.total')}</th></tr>
+                  <tr>
+                    <th className="px-6 py-3">{t('admin.inventory.date')}</th>
+                    <th className="px-6 py-3">{t('admin.inventory.itemName')}</th>
+                    <th className="px-6 py-3">{t('admin.inventory.quantity')}</th>
+                    <th className="px-6 py-3">{t('admin.inventory.unit')}</th>
+                    <th className="px-6 py-3">{t('admin.inventory.price')}</th>
+                    <th className="px-6 py-3">{t('admin.inventory.total')}</th>
+                    <th className="px-6 py-3">Actions</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {purchases.map(p => (
@@ -1234,10 +1469,15 @@ const handleEditItem = (item) => {
                       <td className="px-6 py-4">{p.unit}</td>
                       <td className="px-6 py-4">₪{p.price}</td>
                       <td className="px-6 py-4 font-bold">₪{p.totalCost}</td>
+                      <td className="px-6 py-4">
+                        <button onClick={() => deletePurchase(p.id)} className="text-red-500 hover:text-red-700 transition-colors">
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {purchases.length === 0 && (
-                    <tr><td colSpan="6" className="text-center py-8 text-gray-500">No purchase records found</td></tr>
+                    <tr><td colSpan="7" className="text-center py-8 text-gray-500">No purchase records found</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1490,7 +1730,69 @@ const handleEditItem = (item) => {
 
       {showEditUser && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.users.edit')}</h2><form onSubmit={handleUpdateUser}><input type="text" placeholder={t('admin.users.fullName')} className="w-full border rounded px-3 py-2 mb-3" value={editUserData.name} onChange={e => setEditUserData({...editUserData, name: e.target.value})} required /><select className="w-full border rounded px-3 py-2 mb-3" value={editUserData.role} onChange={e => setEditUserData({...editUserData, role: e.target.value})}><option value={USER_ROLES.ADMIN}>Admin</option><option value={USER_ROLES.CASHIER}>Cashier</option><option value={USER_ROLES.CHEF}>Chef</option></select><div className="grid grid-cols-2 gap-3 mb-3"><input type="time" className="border rounded px-3 py-2" value={editUserData.shiftStart} onChange={e => setEditUserData({...editUserData, shiftStart: e.target.value})} /><input type="time" className="border rounded px-3 py-2" value={editUserData.shiftEnd} onChange={e => setEditUserData({...editUserData, shiftEnd: e.target.value})} /></div><div className="flex justify-end gap-3"><button type="button" onClick={() => setShowEditUser(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">{t('admin.common.update')}</button></div></form></div></div>)}
 
-      {showAddPurchase && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.inventory.addPurchase')}</h2><input type="text" placeholder={t('admin.inventory.itemName')} className="w-full border rounded px-3 py-2 mb-3" value={purchaseForm.itemName} onChange={e => setPurchaseForm({...purchaseForm, itemName: e.target.value})} /><input type="number" placeholder={t('admin.inventory.quantity')} className="w-full border rounded px-3 py-2 mb-3" value={purchaseForm.quantity} onChange={e => setPurchaseForm({...purchaseForm, quantity: e.target.value})} /><input type="number" placeholder={t('admin.inventory.price')} className="w-full border rounded px-3 py-2 mb-3" value={purchaseForm.price} onChange={e => setPurchaseForm({...purchaseForm, price: e.target.value})} /><input type="text" placeholder={t('admin.inventory.supplier')} className="w-full border rounded px-3 py-2 mb-4" value={purchaseForm.supplier} onChange={e => setPurchaseForm({...purchaseForm, supplier: e.target.value})} /><div className="flex justify-end gap-3"><button onClick={() => setShowAddPurchase(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button onClick={savePurchase} className="px-4 py-2 bg-blue-500 text-white rounded">{t('admin.inventory.addPurchase')}</button></div></div></div>)}
+      {showAddPurchase && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+            {/* Design header */}
+            <div className="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
+            
+            <h2 className="text-3xl font-black mb-6 text-gray-800 flex items-center gap-3">
+              <History className="text-blue-600" />
+              {t('admin.inventory.addPurchase')}
+            </h2>
+            
+            <div className="space-y-5">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Raw Material Category</label>
+                <select 
+                  className="w-full border-2 border-gray-100 rounded-2xl px-5 py-3.5 focus:border-blue-500 outline-none transition-all font-bold text-gray-700 bg-gray-50/50 appearance-none cursor-pointer" 
+                  value={purchaseForm.itemName} 
+                  onChange={e => setPurchaseForm({...purchaseForm, itemName: e.target.value})}
+                >
+                  <option value="">Select Material</option>
+                  {inventoryCategories.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                  {inventoryCategories.length === 0 && (
+                    <option disabled className="text-gray-400">Add a category first...</option>
+                  )}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Quantity (kg)</label>
+                  <div className="relative">
+                    <input type="number" step="0.01" className="w-full border-2 border-gray-100 rounded-2xl px-5 py-3.5 focus:border-blue-500 outline-none transition-all font-bold text-gray-700 bg-gray-50/50" value={purchaseForm.quantity} onChange={e => setPurchaseForm({...purchaseForm, quantity: e.target.value})} />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 font-bold text-xs">KG</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Price per KG</label>
+                  <div className="relative">
+                    <input type="number" step="0.01" className="w-full border-2 border-gray-100 rounded-2xl px-5 py-3.5 focus:border-blue-500 outline-none transition-all font-bold text-gray-700 bg-gray-50/50" value={purchaseForm.price} onChange={e => setPurchaseForm({...purchaseForm, price: e.target.value})} />
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 font-bold text-xs">₪</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Supplier Name</label>
+                <input type="text" className="w-full border-2 border-gray-100 rounded-2xl px-5 py-3.5 focus:border-blue-500 outline-none transition-all font-bold text-gray-700 bg-gray-50/50" value={purchaseForm.supplier} onChange={e => setPurchaseForm({...purchaseForm, supplier: e.target.value})} placeholder="Enter supplier name..." />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-10">
+              <button onClick={() => setShowAddPurchase(false)} className="px-6 py-3.5 border-2 border-gray-100 rounded-2xl font-black text-gray-400 hover:bg-gray-50 transition-all uppercase text-xs tracking-widest">
+                {t('admin.common.cancel')}
+              </button>
+              <button onClick={savePurchase} className="px-8 py-3.5 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-100 hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all uppercase text-xs tracking-widest">
+                {t('admin.inventory.addPurchase')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAddSalary && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.salaries.addSalary')}</h2><input type="text" placeholder={t('admin.salaries.employeeName')} className="w-full border rounded px-3 py-2 mb-3" value={salaryData.employeeName} onChange={e => setSalaryData({...salaryData, employeeName: e.target.value})} /><input type="number" placeholder={t('admin.salaries.amount')} className="w-full border rounded px-3 py-2 mb-3" value={salaryData.amount} onChange={e => setSalaryData({...salaryData, amount: e.target.value})} /><select className="w-full border rounded px-3 py-2 mb-3" value={salaryData.month} onChange={e => setSalaryData({...salaryData, month: parseInt(e.target.value)})}>{months.map((m,i) => <option key={i} value={i+1}>{m}</option>)}</select><select className="w-full border rounded px-3 py-2 mb-4" value={salaryData.year} onChange={e => setSalaryData({...salaryData, year: parseInt(e.target.value)})}>{years.map(y => <option key={y}>{y}</option>)}</select><div className="flex justify-end gap-3"><button onClick={() => setShowAddSalary(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button onClick={saveSalary} className="px-4 py-2 bg-green-500 text-white rounded">{t('admin.common.save')}</button></div></div></div>)}
 
@@ -1521,23 +1823,38 @@ const handleEditItem = (item) => {
           required 
         />
         
-        <input 
-          type="text" 
-          placeholder={t('admin.inventory.unit')} 
-          className="w-full border rounded px-3 py-2 mb-3" 
-          value={editForm.weight} 
-          onChange={e => setEditForm({...editForm, weight: e.target.value})} 
-          required 
-        />
-        
-        <input 
-          type="number" 
-          placeholder="Weight in kg (for inventory)" 
-          step="0.01" 
-          className="w-full border rounded px-3 py-2 mb-3" 
-          value={editForm.weightInKg} 
-          onChange={e => setEditForm({...editForm, weightInKg: e.target.value})} 
-        />
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Display Weight (e.g. 250g, 1kg)</label>
+            <input 
+              type="text" 
+              placeholder="Display text" 
+              className="w-full border rounded px-3 py-2" 
+              value={editForm.weight} 
+              onChange={e => {
+                const val = e.target.value;
+                setEditForm({
+                  ...editForm, 
+                  weight: val,
+                  weightInKg: parseWeightToKg(val)
+                });
+              }} 
+              required 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Weight in KG (Auto)</label>
+            <input 
+              type="number" 
+              step="0.001"
+              placeholder="KG" 
+              className="w-full border rounded px-3 py-2 bg-gray-50" 
+              value={editForm.weightInKg} 
+              onChange={e => setEditForm({...editForm, weightInKg: e.target.value})} 
+              required 
+            />
+          </div>
+        </div>
         
         <select 
           className="w-full border rounded px-3 py-2 mb-3" 
@@ -1545,8 +1862,8 @@ const handleEditItem = (item) => {
           onChange={e => setEditForm({...editForm, linkedInventoryItem: e.target.value})}
         >
           <option value="">-- No Inventory Link --</option>
-          {Array.from(new Set(purchases.map(p => p.itemName))).map(item => (
-            <option key={item} value={item}>{item}</option>
+          {inventoryCategories.map(cat => (
+            <option key={cat.id} value={cat.name}>{cat.name}</option>
           ))}
         </select>
         
@@ -1621,6 +1938,30 @@ const handleEditItem = (item) => {
     </div>
   </div>
 )}
+
+      {showAddCategory && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-purple-600"></div>
+            <h2 className="text-2xl font-black mb-6 text-gray-800">Add Inventory Category</h2>
+            <input 
+              type="text" 
+              className="w-full border-2 border-gray-100 rounded-2xl px-5 py-3.5 focus:border-purple-500 outline-none transition-all font-bold text-gray-700 bg-gray-50/50" 
+              placeholder="e.g. Chicken, Beef, Veggies..." 
+              value={newCategoryName}
+              onChange={e => setNewCategoryName(e.target.value)}
+            />
+            <div className="flex justify-end gap-3 mt-8">
+              <button onClick={() => setShowAddCategory(false)} className="px-6 py-3.5 border-2 border-gray-100 rounded-2xl font-black text-gray-400 hover:bg-gray-50 transition-all uppercase text-xs">
+                Cancel
+              </button>
+              <button onClick={saveCategory} className="px-8 py-3.5 bg-purple-600 text-white rounded-2xl font-black shadow-xl shadow-purple-100 hover:bg-purple-700 transition-all uppercase text-xs">
+                Save Category
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Order Details Modal for Reports */}
       {selectedReportOrder && (
