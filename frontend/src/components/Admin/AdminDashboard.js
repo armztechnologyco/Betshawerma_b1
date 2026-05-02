@@ -8,9 +8,9 @@ import {
   Edit2, Trash2, Save, AlertCircle, Plus, Minus,
   Scale, DollarSign, Upload, Package, Calendar,
   FileText, Filter, Download, Eye, Beef, Salad,
-  Sandwich, Coffee, Droplet
+  Sandwich, Coffee, Droplet, Activity, Circle, CheckCircle2
 } from 'lucide-react';
-import { getCurrentUser, logoutUser, getAllUsers, registerUser, USER_ROLES } from '../../services/authService';
+import { getCurrentUser, logoutUser, getAllUsers, registerUser, USER_ROLES, updateUserActiveStatus } from '../../services/authService';
 import {
   getDashboardStats, addTransaction, getTransactions,
   getFinancialSummary, recordSalary, updateOrderStatus,
@@ -207,10 +207,29 @@ function AdminDashboard({ initialTab = 'overview' }) {
     });
 
     return () => {
-      unsubscribeMenu();
+      unsubscribe();
       unsubscribeCats();
     };
   }, []);
+
+  // Update active status periodically
+  useEffect(() => {
+    if (user?.uid) {
+      updateUserActiveStatus(user.uid);
+      const interval = setInterval(() => updateUserActiveStatus(user.uid), 60000); // every minute
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  // Real-time users listener
+  useEffect(() => {
+    const q = query(collection(db, 'users'), orderBy('name', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'kitchen') {
       // Initialize timers for new orders
@@ -314,7 +333,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
     const consumedByItem = {};
     const displayNames = {}; // Map to keep original casing for display
 
-    currentPurchases.forEach(purchase => {
+    purchases.forEach(purchase => {
       const originalName = purchase.itemName;
       const itemKey = originalName?.trim().toLowerCase();
       if (!itemKey) return;
@@ -323,7 +342,6 @@ function AdminDashboard({ initialTab = 'overview' }) {
       purchasedByItem[itemKey] = (purchasedByItem[itemKey] || 0) + purchase.quantity;
     });
 
-    const consumedByItem = {};
     allOrders.forEach(order => {
       order.items?.forEach(item => {
         if (item.weightInKg && item.weightInKg > 0) {
@@ -834,11 +852,176 @@ function AdminDashboard({ initialTab = 'overview' }) {
       {/* className="container mx-auto px-4 py-8"> */}
       {/* OVERVIEW TAB */}
       {activeTab === 'overview' && stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">{t('admin.overview.totalSales')}</h3><p className="text-3xl font-bold text-green-600">₪{stats.todayRevenue || 0}</p></div>
-          <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">{t('admin.overview.totalOrders')}</h3><p className="text-3xl font-bold text-blue-600">{stats.totalOrdersToday || 0}</p></div>
-          <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">{t('admin.overview.pendingOrders')}</h3><p className="text-3xl font-bold text-orange-600">{(stats.pendingOrders || 0) + (stats.preparingOrders || 0)}</p></div>
-          <div className="bg-white rounded-lg shadow-lg p-6"><h3 className="text-lg font-semibold">{t('admin.users.title')}</h3><p className="text-3xl font-bold text-purple-600">{users.length}</p></div>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div 
+              onClick={() => setActiveTab('accounting')}
+              className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4 border-green-500 cursor-pointer group"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-bold text-gray-500 uppercase group-hover:text-green-600 transition-colors">{t('admin.overview.totalSales')}</h3>
+                <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors"><TrendingUp className="text-green-500" size={20} /></div>
+              </div>
+              <p className="text-3xl font-black text-gray-900">₪{stats.todayRevenue || 0}</p>
+            </div>
+            
+            <div 
+              onClick={() => setActiveTab('reports')}
+              className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4 border-blue-500 cursor-pointer group"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-bold text-gray-500 uppercase group-hover:text-blue-600 transition-colors">{t('admin.overview.totalOrders')}</h3>
+                <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors"><ShoppingBag className="text-blue-500" size={20} /></div>
+              </div>
+              <p className="text-3xl font-black text-gray-900">{stats.totalOrdersToday || 0}</p>
+            </div>
+
+            <div 
+              onClick={() => setActiveTab('kitchen')}
+              className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4 border-orange-500 cursor-pointer group"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-bold text-gray-500 uppercase group-hover:text-orange-600 transition-colors">{t('admin.overview.pendingOrders')}</h3>
+                <div className="p-2 bg-orange-50 rounded-lg group-hover:bg-orange-100 transition-colors"><Clock className="text-orange-500" size={20} /></div>
+              </div>
+              <p className="text-3xl font-black text-gray-900">{(stats.pendingOrders || 0) + (stats.preparingOrders || 0)}</p>
+            </div>
+
+            <div 
+              onClick={() => setActiveTab('users')}
+              className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4 border-purple-500 cursor-pointer group"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-bold text-gray-500 uppercase group-hover:text-purple-600 transition-colors">Online Staff</h3>
+                <div className="p-2 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors"><Activity className="text-purple-500" size={20} /></div>
+              </div>
+              <p className="text-3xl font-black text-gray-900">
+                {users.filter(u => {
+                  if (!u.lastActive) return false;
+                  const lastActive = new Date(u.lastActive).getTime();
+                  return (Date.now() - lastActive) < 300000; // 5 minutes
+                }).length}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Live Order Monitor */}
+            <div className="lg:col-span-2 bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+              <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+                  <h3 className="font-bold text-gray-800">Live Order Monitor</h3>
+                </div>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Real-time Updates</span>
+              </div>
+              <div className="divide-y divide-gray-50 max-h-[500px] overflow-y-auto">
+                {kitchenOrders.filter(o => ['pending', 'preparing', 'ready'].includes(o.status)).length === 0 ? (
+                  <div className="p-12 text-center text-gray-400 italic">No active orders right now</div>
+                ) : (
+                  kitchenOrders
+                    .filter(o => ['pending', 'preparing', 'ready'].includes(o.status))
+                    .map(order => (
+                      <div 
+                        key={order.id} 
+                        onClick={() => setActiveTab('kitchen')}
+                        className="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
+                            order.status === 'ready' ? 'bg-green-100 text-green-600' : 
+                            order.status === 'preparing' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'
+                          }`}>
+                            #{order.orderNumber}
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-900">{order.customerName || 'Walk-in'}</p>
+                            <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                              <span className={`flex items-center gap-1 font-bold ${
+                                order.status === 'ready' ? 'text-green-500' : 
+                                order.status === 'preparing' ? 'text-blue-500' : 'text-orange-500'
+                              }`}>
+                                <Circle size={8} fill="currentColor" /> {order.status.toUpperCase()}
+                              </span>
+                              <span>•</span>
+                              <span>{order.items?.length || 0} items</span>
+                              <span>•</span>
+                              <span>{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              {(() => {
+                                const expected = order.items?.reduce((total, item) => total + ((item.preparationTime || 5) * item.quantity), 0) || 5;
+                                const elapsed = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60);
+                                if (elapsed > expected && order.status !== 'ready') {
+                                  return (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-red-500 font-bold animate-pulse">DELAYED</span>
+                                    </>
+                                  );
+                                }
+                                return null;
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-black text-gray-900">₪{order.total}</p>
+                          {order.status === 'preparing' && orderTimers[order.id] && (
+                            <p className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mt-1">
+                              {formatTime(orderTimers[order.id].remainingTime)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+            </div>
+
+            {/* Online Staff List */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+              <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                  <Users size={18} className="text-purple-500" /> Online Staff
+                </h3>
+              </div>
+              <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+                {users.map(u => {
+                  const isOnline = u.lastActive && (Date.now() - new Date(u.lastActive).getTime()) < 300000;
+                  return (
+                    <div 
+                      key={u.id} 
+                      onClick={() => setActiveTab('users')}
+                      className="flex items-center justify-between group cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center font-bold">
+                            {u.name.charAt(0).toUpperCase()}
+                          </div>
+                          {isOnline && (
+                            <div className="absolute -right-0.5 -bottom-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900 text-sm">{u.name}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{u.role}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {isOnline ? (
+                          <span className="text-[10px] font-black text-green-500 bg-green-50 px-2 py-1 rounded-full uppercase">Online</span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-gray-400">
+                            {u.lastActive ? new Date(u.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Offline'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1078,6 +1261,17 @@ function AdminDashboard({ initialTab = 'overview' }) {
                     }`}>
                     {order.status}
                   </span>
+                  {(() => {
+                    const elapsed = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60);
+                    if (elapsed > totalPrepTime && order.status !== 'ready') {
+                      return (
+                        <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-black animate-pulse flex items-center gap-1 border border-red-200">
+                          <AlertCircle size={12} /> {t('reports.delayed')}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 <p className="text-gray-600 mb-2">{order.customerName}</p>
