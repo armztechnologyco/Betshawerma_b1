@@ -1,3 +1,4 @@
+// Admin Dashboard Component
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -268,6 +269,71 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
     drinks: { name: t('cashier.categories.drinks'), icon: Droplet, color: 'bg-blue-500' }
   };
 
+  const fetchUsers = useCallback(async () => {
+    try {
+      const data = await getAllUsers();
+      setUsers(data);
+    } catch (error) { console.error(error); }
+  }, []);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const data = await getDashboardStats();
+      setStats(data);
+    } catch (error) { console.error(error); }
+  }, []);
+
+  const loadAccountingData = useCallback(async () => {
+    try {
+      const [tx, sum] = await Promise.all([getTransactions(), getFinancialSummary(selectedMonth, selectedYear)]);
+      setTransactions(tx || []);
+      setSummary(sum || { totalIncome: 0, totalExpense: 0, profit: 0 });
+    } catch (error) { console.error(error); }
+  }, [selectedMonth, selectedYear]);
+
+  const loadSalaries = useCallback(async () => {
+    try {
+      const allTx = await getTransactions();
+      const salaryTx = allTx.filter(tx => tx.category === 'salary');
+      setSalaries(salaryTx);
+    } catch (error) {
+      console.error('Error loading salaries:', error);
+    }
+  }, []);
+
+  const loadAdminData = useCallback(async () => {
+    try {
+      setLoading(true);
+      if (user?.role === USER_ROLES.ADMIN) {
+        await Promise.all([fetchUsers(), fetchStats(), loadAccountingData()]);
+      }
+    } catch (error) {
+      toast.error("Failed to load dashboard");
+    } finally {
+      setLoading(false);
+    }
+  }, [user, fetchUsers, fetchStats, loadAccountingData]);
+
+  const generateReport = useCallback(async () => {
+    if (!reportFilter.fromDate || !reportFilter.toDate) {
+      toast.error(t('admin.reports.selectDateRange'));
+      return;
+    }
+
+    const ordersRef = collection(db, 'orders');
+    let q = query(ordersRef, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    let orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    orders = orders.filter(order => order.createdAt >= reportFilter.fromDate && order.createdAt <= reportFilter.toDate);
+    if (reportFilter.status !== 'all') orders = orders.filter(order => order.status === reportFilter.status);
+    if (reportFilter.cashierName !== 'all') orders = orders.filter(order => order.cashierName === reportFilter.cashierName);
+
+    setReportData(orders);
+    setShowReport(true);
+  }, [reportFilter, t]);
+
+
 
 
   // Load data on mount
@@ -446,15 +512,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
 
 
 
-  const loadSalaries = useCallback(async () => {
-    try {
-      const allTx = await getTransactions();
-      const salaryTx = allTx.filter(tx => tx.category === 'salary');
-      setSalaries(salaryTx);
-    } catch (error) {
-      console.error('Error loading salaries:', error);
-    }
-  }, []);
+
 
 
 
@@ -579,40 +637,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
     });
   }, []);
 
-  const loadAdminData = useCallback(async () => {
-    try {
-      setLoading(true);
-      if (user?.role === USER_ROLES.ADMIN) {
-        await Promise.all([fetchUsers(), fetchStats(), loadAccountingData()]);
-      }
-    } catch (error) {
-      toast.error("Failed to load dashboard");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
-  const fetchUsers = useCallback(async () => {
-    try {
-      const data = await getAllUsers();
-      setUsers(data);
-    } catch (error) { console.error(error); }
-  }, []);
-
-  const fetchStats = useCallback(async () => {
-    try {
-      const data = await getDashboardStats();
-      setStats(data);
-    } catch (error) { console.error(error); }
-  }, []);
-
-  const loadAccountingData = useCallback(async () => {
-    try {
-      const [tx, sum] = await Promise.all([getTransactions(), getFinancialSummary(selectedMonth, selectedYear)]);
-      setTransactions(tx || []);
-      setSummary(sum || { totalIncome: 0, totalExpense: 0, profit: 0 });
-    } catch (error) { console.error(error); }
-  }, [selectedMonth, selectedYear]);
 
   const handleLogout = useCallback(async () => {
     await logoutUser();
@@ -876,24 +901,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
   }, [user, fetchUsers]);
 
   // Report generation
-  const generateReport = useCallback(async () => {
-    if (!reportFilter.fromDate || !reportFilter.toDate) {
-      toast.error(t('admin.reports.selectDateRange'));
-      return;
-    }
 
-    const ordersRef = collection(db, 'orders');
-    let q = query(ordersRef, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    let orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    orders = orders.filter(order => order.createdAt >= reportFilter.fromDate && order.createdAt <= reportFilter.toDate);
-    if (reportFilter.status !== 'all') orders = orders.filter(order => order.status === reportFilter.status);
-    if (reportFilter.cashierName !== 'all') orders = orders.filter(order => order.cashierName === reportFilter.cashierName);
-
-    setReportData(orders);
-    setShowReport(true);
-  }, [reportFilter]);
 
   if (loading) return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div></div>;
 
