@@ -69,6 +69,27 @@
     "processing": "Processing...",
     "addToOrder": "Add to Order",
     "customize": "Customize",
+    "addExtras": "Add Extras",
+    "specialInstructions": "Special Instructions",
+    "specialInstructionsPlaceholder": "e.g., extra spicy, no onions, etc.",
+    "quantity": "Quantity",
+    "basePrice": "Base Price",
+    "weight": "Weight",
+    "cancel": "Cancel",
+    "addToCart": "Add to Cart",
+    "totalPerItem": "Total per item:",
+    "totalFor": "Total for",
+    "extras": "Extras:",
+    "extrasNames": {
+      "cheese": "Extra Cheese",
+      "spicy": "Spicy Sauce",
+      "bbq": "BBQ Sauce",
+      "garlic": "Garlic Sauce",
+      "tahini": "Tahini Sauce",
+      "extra_meat": "Extra Meat",
+      "extra_veggies": "Extra Veggies",
+      "pickles": "Extra Pickles"
+    },
     "unavailable": "{{name}} is currently unavailable",
     "addedToCart": "{{name}} added to cart",
     "removedFromCart": "Item removed from cart",
@@ -92,7 +113,12 @@
       "orderNumber": "Order #",
       "thanks": "Thank you for visiting!",
       "scanMenu": "Scan the code for the menu"
-    }
+    },
+    "customerType": "Customer Type",
+    "egyptian": "🇪🇬 Egyptian",
+    "foreigner": "🌍 Foreigner",
+    "clearCartWarning": "⚠️ Changing type clears the cart.",
+    "note": "Note"
   },
   "admin": {
     "dashboard": "Admin Dashboard",
@@ -234,5 +260,46 @@
     "upload_image": "Upload Image",
     "includes": "Includes (e.g., Fries + Drink)",
     "available_for_sale": "Available for sale"
+  },
+  "app": {
+    "loading": "Loading...",
+    "welcome": "Welcome, {{name}}",
+    "logout": "Logout"
+  },
+  "options": {
+    "title": "Options",
+    "management": "Options Management",
+    "addOption": "Add Option",
+    "editOption": "Edit Option",
+    "noOptions": "No options yet. Click \"Add Option\" to create one.",
+    "name": "Name",
+    "namePlaceholder": "e.g. No Onion",
+    "price": "Price (usually 0)",
+    "pricePlaceholder": "e.g. 0",
+    "icon": "Icon (emoji)",
+    "iconPlaceholder": "e.g. 🧅",
+    "cancel": "Cancel",
+    "update": "Update",
+    "add": "Add Option",
+    "deleteConfirm": "Delete \"{{name}}\"?",
+    "deleted": "Option deleted",
+    "deleteFailed": "Failed to delete option",
+    "saved": "Option saved",
+    "saveFailed": "Failed to save option",
+    "updated": "Option updated",
+    "added": "Option added"
+  },
+  "units": {
+    "kg": "Kg",
+    "bottle": "Bottle",
+    "piece": "Piece",
+    "liter": "Liter",
+    "pack": "Pack",
+    "box": "Box"
+  },
+  "language": {
+    "en": "English",
+    "ar": "العربية",
+    "select": "Change Language"
   }
 }

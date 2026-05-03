@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 import { getCurrentUser, logoutUser, updateUserActiveStatus } from './services/authService';
 
@@ -14,10 +15,18 @@ import AccountingDashboard from './components/Accounting/AccountingDashboard';
 import AdminDashboard from './components/Admin/AdminDashboard';
 
 import ShiftTimer from './components/Common/ShiftTimer';
+import LanguageSwitcher from './components/Common/LanguageSwitcher';
 
 function App() {
+  const { t, i18n } = useTranslation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Apply RTL direction when Arabic is active
+  useEffect(() => {
+    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
 
   useEffect(() => {
     checkUser();
@@ -55,7 +64,7 @@ function App() {
       <div className="flex justify-center items-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <div className="text-xl">Loading...</div>
+          <div className="text-xl">{t('app.loading')}</div>
         </div>
       </div>
     );
@@ -65,25 +74,7 @@ function App() {
     <Router>
       <div className="min-h-screen bg-gray-100">
 
-        {/* 🔥 GLOBAL TOP BAR (only when logged in) */}
-        {user && (
-          <div className="bg-orange-600 text-white px-6 py-3 flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-  <ShiftTimer />
-  <span className="text-white">Welcome, {user?.name}</span>
-  {/* <button onClick={handleLogout} className="bg-orange-700 text-white px-4 py-2 rounded-lg">
-    Logout
-  </button> */}
-</div>
 
-            <button
-              onClick={handleLogout}
-              className="bg-orange-700 px-4 py-2 rounded hover:bg-orange-800"
-            >
-              Logout
-            </button>
-          </div>
-        )}
 
         
 
@@ -114,7 +105,7 @@ function App() {
             path="/cashier"
             element={
               <ProtectedRoute user={user} requiredPage="cashier">
-                <CashierDashboard userRole={user?.role} />
+                <CashierDashboard user={user} />
               </ProtectedRoute>
             }
           />
@@ -144,7 +135,7 @@ function App() {
             path="/admin"
             element={
               <ProtectedRoute user={user} requiredPage="admin">
-                <AdminDashboard />
+                <AdminDashboard user={user} />
               </ProtectedRoute>
             }
           />
@@ -154,7 +145,7 @@ function App() {
             path="/menu-management"
             element={
               <ProtectedRoute user={user} requiredPage="admin">
-                <AdminDashboard initialTab="menu" />
+                <AdminDashboard user={user} initialTab="menu" />
               </ProtectedRoute>
             }
           />

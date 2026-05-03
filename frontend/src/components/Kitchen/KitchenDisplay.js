@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { 
-  Clock, CheckCircle, CookingPot, Timer, AlertCircle, 
-  ChevronRight, Circle, ChefHat, LogOut, Package 
+import {
+  Clock, CheckCircle, CookingPot, Timer, AlertCircle,
+  ChevronRight, Circle, ChefHat, LogOut, Package
 } from 'lucide-react';
 import { subscribeToKitchenOrders, updateOrderStatus } from '../../services/firebaseService';
 import { logoutUser } from '../../services/authService';
+import i18n from '../../i18n';
+import ShiftTimer from '../Common/ShiftTimer';
+import LanguageSwitcher from '../Common/LanguageSwitcher';
+import { formatTime, getProgressPercentage } from '../../utils/formatters';
+import { useCallback } from 'react';
 
 function KitchenDisplay() {
   const { t } = useTranslation();
@@ -82,30 +87,21 @@ function KitchenDisplay() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleUpdateStatus = async (orderId, newStatus) => {
+  const handleUpdateStatus = useCallback(async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
       toast.success(t('kitchen.statusUpdated', { status: newStatus }));
     } catch (error) {
       toast.error('Failed to update status');
     }
-  };
+  }, [t]);
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
-  const getProgressPercentage = (remaining, total) => {
-    if (!total || total === 0) return 0;
-    return ((total * 60 - remaining) / (total * 60)) * 100;
-  };
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await logoutUser();
     window.location.href = '/login';
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -133,14 +129,20 @@ function KitchenDisplay() {
               </div>
             </div>
           </div>
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl transition-all font-bold text-sm backdrop-blur-sm"
-          >
-            <LogOut size={18} /> {t('admin.logout')}
-          </button>
+          <div className="flex items-center gap-6">
+            <ShiftTimer />
+            <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl transition-all font-bold text-sm backdrop-blur-sm"
+            >
+              <LogOut size={18} /> {t('admin.logout')}
+            </button>
+          </div>
         </div>
-      </nav>
+      </div>
+    </nav>
 
       <div className="flex-1 p-6 max-w-7xl mx-auto w-full">
         {orders.length === 0 ? (
@@ -160,34 +162,31 @@ function KitchenDisplay() {
                 const expected = order.items?.reduce((total, item) => total + ((item.preparationTime || 5) * item.quantity), 0) || 5;
                 const elapsed = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60);
                 const isDelayed = elapsed > expected && order.status !== 'ready';
-                
+
                 return (
-                  <div 
-                    key={order.id} 
-                    className={`bg-white rounded-[2rem] shadow-xl overflow-hidden flex flex-col border-2 transition-all duration-300 ${
-                      order.status === 'ready' ? 'border-green-500 ring-4 ring-green-50' : 
+                  <div
+                    key={order.id}
+                    className={`bg-white rounded-[2rem] shadow-xl overflow-hidden flex flex-col border-2 transition-all duration-300 ${order.status === 'ready' ? 'border-green-500 ring-4 ring-green-50' :
                       isDelayed ? 'border-red-500 ring-4 ring-red-50' : 'border-transparent'
-                    }`}
+                      }`}
                   >
                     {/* Header */}
-                    <div className={`p-6 flex justify-between items-start ${
-                      order.status === 'ready' ? 'bg-green-50' : 
+                    <div className={`p-6 flex justify-between items-start ${order.status === 'ready' ? 'bg-green-50' :
                       isDelayed ? 'bg-red-50' : 'bg-gray-50'
-                    }`}>
+                      }`}>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-black text-gray-400 uppercase tracking-tighter">Order ID</span>
-                          <span className={`text-2xl font-black ${
-                            order.status === 'ready' ? 'text-green-600' : 
+                          <span className={`text-2xl font-black ${order.status === 'ready' ? 'text-green-600' :
                             isDelayed ? 'text-red-600' : 'text-gray-900'
-                          }`}>#{order.orderNumber}</span>
+                            }`}>#{order.orderNumber}</span>
                         </div>
                         <p className="text-gray-600 font-bold flex items-center gap-1.5">
                           <Circle size={10} className={isDelayed ? 'text-red-500' : 'text-orange-500'} fill="currentColor" />
                           {order.customerName || 'Walk-in'}
                         </p>
                       </div>
-                      
+
                       {isDelayed && (
                         <div className="bg-red-600 text-white px-4 py-2 rounded-2xl animate-pulse flex items-center gap-2 shadow-lg shadow-red-200">
                           <AlertCircle size={18} />
@@ -199,7 +198,7 @@ function KitchenDisplay() {
                     {/* Progress Bar (Only for Preparing) */}
                     {order.status === 'preparing' && timer && (
                       <div className="h-2 bg-gray-100 w-full overflow-hidden">
-                        <div 
+                        <div
                           className={`h-full transition-all duration-1000 ${isDelayed ? 'bg-red-500' : 'bg-orange-500'}`}
                           style={{ width: `${getProgressPercentage(timer.remainingTime, timer.totalTime)}%` }}
                         ></div>
@@ -214,9 +213,8 @@ function KitchenDisplay() {
                           {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                         {order.status === 'preparing' && timer && (
-                          <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg ${
-                            isDelayed ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'
-                          }`}>
+                          <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg ${isDelayed ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'
+                            }`}>
                             <Timer size={20} />
                             {formatTime(timer.remainingTime)}
                           </div>
@@ -226,14 +224,32 @@ function KitchenDisplay() {
                       <div className="space-y-4">
                         <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Order Items</h4>
                         {order.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center group">
-                            <div className="flex items-center gap-4">
-                              <span className="w-10 h-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center font-black text-lg">
+                          <div key={idx} className="group">
+                            <div className="flex items-start gap-4">
+                              <span className="w-10 h-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center font-black text-lg flex-shrink-0">
                                 {item.quantity}
                               </span>
-                              <div>
+                              <div className="flex-1 min-w-0">
                                 <p className="font-bold text-gray-800 group-hover:text-orange-600 transition-colors">{item.name}</p>
                                 {item.includes && <p className="text-[10px] text-gray-400 font-bold mt-0.5">{item.includes}</p>}
+
+                                {item.options && item.options.length > 0 && (
+                                  <div className="mt-1.5 flex flex-wrap gap-1">
+                                    {item.options.map((opt, oIdx) => (
+                                      <span
+                                        key={oIdx}
+                                        className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200"
+                                      >
+                                        ✓ {opt.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {item.notes && (
+                                  <p className="mt-1 text-[11px] text-gray-500 italic bg-gray-50 px-2 py-1 rounded-lg border-l-2 border-orange-300">
+                                    📝 {item.notes}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </div>

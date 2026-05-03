@@ -38,16 +38,7 @@ function Login() {
     }
   };
 
-  const demoAccounts = [
-    { role: t('admin.tabs.users'), email: 'admin@shawarma.com', password: 'admin123', page: t('admin.dashboard') },
-    { role: t('cashier.receipt.cashier'), email: 'cashier@shawarma.com', password: 'cashier123', page: t('cashier.dashboard') },
-    { role: t('kitchen.title'), email: 'chef@shawarma.com', password: 'chef123', page: t('kitchen.title') }
-  ];
 
-  const fillDemoAccount = (email, password) => {
-    setEmail(email);
-    setPassword(password);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -130,37 +121,7 @@ function Login() {
           </div>
         </form>
 
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">{t('login.demoAccounts')}</span>
-            </div>
-          </div>
 
-          <div className="mt-4 space-y-2">
-            {demoAccounts.map((account, index) => (
-              <div
-                key={index}
-                className="bg-gray-50 rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition-colors"
-                onClick={() => fillDemoAccount(account.email, account.password)}
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-semibold text-gray-800">{account.role}</p>
-                    <p className="text-xs text-gray-500">{account.email}</p>
-                    <p className="text-xs text-orange-600">{t('login.access')}: {account.page}</p>
-                  </div>
-                  <button className="text-xs bg-orange-500 text-white px-2 py-1 rounded hover:bg-orange-600">
-                    {t('login.use')}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -69,6 +69,27 @@
     "processing": "جاري المعالجة...",
     "addToOrder": "إضافة للطلب",
     "customize": "تخصيص",
+    "addExtras": "إضافة إضافات",
+    "specialInstructions": "تعليمات خاصة",
+    "specialInstructionsPlaceholder": "مثال: حار زيادة، بدون بصل، الخ",
+    "quantity": "الكمية",
+    "basePrice": "السعر الأساسي",
+    "weight": "الوزن",
+    "cancel": "إلغاء",
+    "addToCart": "إضافة للسلة",
+    "totalPerItem": "الإجمالي للقطعة:",
+    "totalFor": "الإجمالي لـ",
+    "extras": "إضافات:",
+    "extrasNames": {
+      "cheese": "جبنة إضافية",
+      "spicy": "صوص حار",
+      "bbq": "صوص باربكيو",
+      "garlic": "ثومية",
+      "tahini": "طحينة",
+      "extra_meat": "لحم إضافي",
+      "extra_veggies": "خضار إضافي",
+      "pickles": "مخلل إضافي"
+    },
     "unavailable": "{{name}} غير متوفر حالياً",
     "addedToCart": "تم إضافة {{name}} إلى السلة",
     "removedFromCart": "تم إزالة الصنف من السلة",
@@ -92,7 +113,12 @@
       "orderNumber": "رقم الطلب",
       "thanks": "شكراً لزيارتكم!",
       "scanMenu": "امسح الكود لرؤية المنيو"
-    }
+    },
+    "customerType": "نوع العميل",
+    "egyptian": "🇪🇬 مصري",
+    "foreigner": "🌍 أجنبي",
+    "clearCartWarning": "⚠️ تغيير نوع العميل يمسح السلة.",
+    "note": "ملاحظة"
   },
   "admin": {
     "dashboard": "لوحة المدير",
@@ -234,5 +260,46 @@
     "upload_image": "رفع صورة",
     "includes": "يحتوي على (مثلاً: بطاطس + مشروب)",
     "available_for_sale": "متوفر للبيع"
+  },
+  "app": {
+    "loading": "جاري التحميل...",
+    "welcome": "أهلاً، {{name}}",
+    "logout": "تسجيل الخروج"
+  },
+  "options": {
+    "title": "خيارات",
+    "management": "إدارة الخيارات",
+    "addOption": "إضافة خيار",
+    "editOption": "تعديل الخيار",
+    "noOptions": "لا توجد خيارات بعد. اضغط \"إضافة خيار\" لإنشاء واحد.",
+    "name": "الاسم",
+    "namePlaceholder": "مثلاً: بدون بصل",
+    "price": "السعر (غالباً 0)",
+    "pricePlaceholder": "مثلاً: 0",
+    "icon": "أيقونة (إيموجي)",
+    "iconPlaceholder": "مثلاً: 🧅",
+    "cancel": "إلغاء",
+    "update": "تحديث",
+    "add": "إضافة خيار",
+    "deleteConfirm": "هل تريد حذف \"{{name}}\"؟",
+    "deleted": "تم حذف الخيار",
+    "deleteFailed": "فشل حذف الخيار",
+    "saved": "تم حفظ الخيار",
+    "saveFailed": "فشل حفظ الخيار",
+    "updated": "تم تحديث الخيار",
+    "added": "تم إضافة الخيار"
+  },
+  "units": {
+    "kg": "كجم",
+    "bottle": "زجاجة",
+    "piece": "قطعة",
+    "liter": "لتر",
+    "pack": "ربطة",
+    "box": "صندوق"
+  },
+  "language": {
+    "en": "English",
+    "ar": "العربية",
+    "select": "تغيير اللغة"
   }
 }
