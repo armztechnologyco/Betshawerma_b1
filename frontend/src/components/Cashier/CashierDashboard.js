@@ -2254,6 +2254,21 @@ function CashierDashboard({ userRole }) {
                   name="weight"
                   required
                   defaultValue={editingItem?.weight || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const numMatch = val.match(/[\d.]+/);
+                    if (numMatch) {
+                      const num = parseFloat(numMatch[0]);
+                      if (!isNaN(num)) {
+                        const kgValue = val.toLowerCase().includes('kg') ? num : num / 1000;
+                        const kgInput = e.target.form.elements['weightInKg'];
+                        if (kgInput) kgInput.value = kgValue;
+                      }
+                    } else if (val === '') {
+                      const kgInput = e.target.form.elements['weightInKg'];
+                      if (kgInput) kgInput.value = '';
+                    }
+                  }}
                   className="w-full border rounded-lg px-3 py-2"
                   placeholder="e.g., 250g"
                 />

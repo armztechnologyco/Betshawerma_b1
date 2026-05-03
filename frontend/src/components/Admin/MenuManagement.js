@@ -284,7 +284,21 @@ function CashierDashboard({ userRole }) {
 
               <input name="name" defaultValue={editingItem?.name} placeholder="Name" required />
               <input name="price" type="number" defaultValue={editingItem?.price} required />
-              <input name="weight" defaultValue={editingItem?.weight} placeholder="Weight description (e.g. 150g)" required />
+              <input name="weight" defaultValue={editingItem?.weight} placeholder="Weight description (e.g. 150g)" onChange={(e) => {
+                const val = e.target.value;
+                const numMatch = val.match(/[\d.]+/);
+                if (numMatch) {
+                  const num = parseFloat(numMatch[0]);
+                  if (!isNaN(num)) {
+                    const kgValue = val.toLowerCase().includes('kg') ? num : num / 1000;
+                    const kgInput = e.target.form.elements['weightInKg'];
+                    if (kgInput) kgInput.value = kgValue;
+                  }
+                } else if (val === '') {
+                  const kgInput = e.target.form.elements['weightInKg'];
+                  if (kgInput) kgInput.value = '';
+                }
+              }} required />
 
               <input name="weightInKg" type="number" step="0.01" defaultValue={editingItem?.weightInKg} placeholder="Weight in KG (for inventory)" />
               <select name="linkedInventoryItem" defaultValue={editingItem?.linkedInventoryItem || ""}>

@@ -2029,7 +2029,21 @@ function AdminDashboard({ initialTab = 'overview' }) {
                 placeholder={t('admin.inventory.unit')}
                 className="w-full border rounded px-3 py-2 mb-3"
                 value={editForm.weight}
-                onChange={e => setEditForm({ ...editForm, weight: e.target.value })}
+                onChange={e => {
+                  const val = e.target.value;
+                  let updatedForm = { ...editForm, weight: val };
+                  const numMatch = val.match(/[\d.]+/);
+                  if (numMatch) {
+                    const num = parseFloat(numMatch[0]);
+                    if (!isNaN(num)) {
+                      // If it contains "kg", assume kg, otherwise assume grams and divide by 1000
+                      updatedForm.weightInKg = val.toLowerCase().includes('kg') ? num : num / 1000;
+                    }
+                  } else if (val === '') {
+                    updatedForm.weightInKg = '';
+                  }
+                  setEditForm(updatedForm);
+                }}
                 required
               />
 
