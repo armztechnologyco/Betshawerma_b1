@@ -141,10 +141,10 @@ function App() {
                     ? user.role === 'cashier'
                       ? '/cashier'
                       : user.role === 'chef'
-                      ? '/kitchen'
-                      : user.role === 'admin'
-                      ? '/admin'
-                      : '/login'
+                        ? '/kitchen'
+                        : user.role === 'admin'
+                          ? '/admin'
+                          : '/login'
                     : '/login'
                 }
               />
