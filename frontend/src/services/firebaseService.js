@@ -329,7 +329,8 @@ export const getDashboardStats = async () => {
       preparingOrders: preparingOrders.length,
       totalOrdersToday: todayOrders.length,
       monthlyProfit: summary.profit,
-      monthlyRevenue: summary.totalIncome
+      monthlyRevenue: summary.totalIncome,
+      todayOrders: todayOrders
     };
   } catch (error) {
     console.error('Error getting dashboard stats:', error);

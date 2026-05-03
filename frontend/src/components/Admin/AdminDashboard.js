@@ -101,6 +101,10 @@ function AdminDashboard({ initialTab = 'overview' }) {
     year: 'all'
   });
 
+  // Today Overview modals state
+  const [showTodayItemsModal, setShowTodayItemsModal] = useState(false);
+  const [showTodayOrdersModal, setShowTodayOrdersModal] = useState(false);
+
 
 
   // Purchases/Inventory state
@@ -973,18 +977,18 @@ function AdminDashboard({ initialTab = 'overview' }) {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div
-              onClick={() => setActiveTab('accounting')}
+              onClick={() => setShowTodayItemsModal(true)}
               className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4 border-green-500 cursor-pointer group"
             >
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-sm font-bold text-gray-500 uppercase group-hover:text-green-600 transition-colors">{t('admin.overview.totalSales')}</h3>
                 <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors"><TrendingUp className="text-green-500" size={20} /></div>
               </div>
-              <p className="text-3xl font-black text-gray-900">${stats.todayRevenue || 0}</p>
+              <p className="text-3xl font-black text-gray-900">${Number(stats.todayRevenue || 0).toFixed(2)}</p>
             </div>
 
             <div
-              onClick={() => setActiveTab('reports')}
+              onClick={() => setShowTodayOrdersModal(true)}
               className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4 border-blue-500 cursor-pointer group"
             >
               <div className="flex justify-between items-center mb-2">
@@ -1636,9 +1640,9 @@ function AdminDashboard({ initialTab = 'overview' }) {
                             {p.quantity} {p.unit}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${p.price}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${Number(p.price).toFixed(2)}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-green-600 font-black text-sm">${p.totalCost}</span>
+                          <span className="text-green-600 font-black text-sm">${Number(p.totalCost).toFixed(2)}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                           <div className="flex justify-end gap-2">
@@ -1883,7 +1887,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                       <td className="px-6 py-4">{new Date(order.createdAt).toLocaleDateString()}</td>
                       <td className="px-6 py-4">{order.customerName}</td>
                       <td className="px-6 py-4">{order.items?.length} items</td>
-                      <td className="px-6 py-4 font-bold">${order.total}</td>
+                      <td className="px-6 py-4 font-bold">${Number(order.total).toFixed(2)}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded text-xs ${order.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                           {order.status}
@@ -1922,9 +1926,9 @@ function AdminDashboard({ initialTab = 'overview' }) {
       {activeTab === 'accounting' && (
         <div>
           <div className="grid grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.income')}</h3><p className="text-3xl font-bold text-green-600">${summary.totalIncome}</p></div>
-            <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.expenses')}</h3><p className="text-3xl font-bold text-red-600">${summary.totalExpense}</p></div>
-            <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.profit')}</h3><p className="text-3xl font-bold text-blue-600">${summary.profit}</p></div>
+            <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.income')}</h3><p className="text-3xl font-bold text-green-600">${Number(summary.totalIncome).toFixed(2)}</p></div>
+            <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.expenses')}</h3><p className="text-3xl font-bold text-red-600">${Number(summary.totalExpense).toFixed(2)}</p></div>
+            <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.profit')}</h3><p className="text-3xl font-bold text-blue-600">${Number(summary.profit).toFixed(2)}</p></div>
           </div>
           <div className="flex gap-4 mb-6">
             <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="border rounded px-3 py-2">
@@ -1942,12 +1946,33 @@ function AdminDashboard({ initialTab = 'overview' }) {
               </thead>
               <tbody>
                 {transactions.map(t => (
-                  <tr key={t.id} className="border-t">
+                  <tr 
+                    key={t.id} 
+                    className={`border-t ${t.description?.startsWith('Order #') ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                    onClick={async () => {
+                      if (t.description?.startsWith('Order #')) {
+                        const orderNum = t.description.split('#')[1]?.trim();
+                        if (orderNum) {
+                          try {
+                            const allOrders = await getAllOrders();
+                            const order = allOrders.find(o => o.orderNumber === orderNum);
+                            if (order) {
+                              setSelectedReportOrder(order);
+                            } else {
+                              toast.error('Order details not found');
+                            }
+                          } catch (err) {
+                            toast.error('Failed to load order');
+                          }
+                        }
+                      }
+                    }}
+                  >
                     <td className="px-6 py-4">{new Date(t.createdAt).toLocaleDateString()}</td>
                     <td className="px-6 py-4">{t.description}</td>
                     <td className="px-6 py-4">{t.category}</td>
                     <td className="px-6 py-4"><span className={`px-2 py-1 rounded text-xs ${t.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{t.type}</span></td>
-                    <td className="px-6 py-4 text-right font-bold">${t.amount}</td>
+                    <td className="px-6 py-4 text-right font-bold">${Number(t.amount).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -2243,6 +2268,96 @@ function AdminDashboard({ initialTab = 'overview' }) {
               <button onClick={() => setSelectedReportOrder(null)} className="px-6 py-2 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 transition-colors">
                 {t('reports.close')}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Today Orders Modal */}
+      {showTodayOrdersModal && stats?.todayOrders && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto m-4 shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Today's Orders</h2>
+              <button onClick={() => setShowTodayOrdersModal(false)} className="text-gray-500 hover:text-red-500 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr><th className="px-6 py-3">{t('cashier.receipt.orderNumber')}</th><th className="px-6 py-3">{t('admin.inventory.date')}</th><th className="px-6 py-3">{t('admin.users.fullName')}</th><th className="px-6 py-3">{t('admin.tabs.menu')}</th><th className="px-6 py-3">{t('admin.inventory.total')}</th><th className="px-6 py-3">{t('admin.reports.status')}</th></tr>
+              </thead>
+              <tbody>
+                {stats.todayOrders.map(order => (
+                  <tr key={order.id} className="border-t hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setSelectedReportOrder(order)}>
+                    <td className="px-6 py-4">#{order.orderNumber}</td>
+                    <td className="px-6 py-4">{new Date(order.createdAt).toLocaleTimeString()}</td>
+                    <td className="px-6 py-4">{order.customerName}</td>
+                    <td className="px-6 py-4">{order.items?.length} items</td>
+                    <td className="px-6 py-4 font-bold">${Number(order.total).toFixed(2)}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-xs ${order.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {order.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {stats.todayOrders.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">No orders today</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Today Items Sold Modal */}
+      {showTodayItemsModal && stats?.todayOrders && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto m-4 shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Items Sold Today</h2>
+              <button onClick={() => setShowTodayItemsModal(false)} className="text-gray-500 hover:text-red-500 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-3 mb-6">
+              {(() => {
+                const itemAggregates = {};
+                stats.todayOrders.forEach(order => {
+                  order.items?.forEach(item => {
+                    if (!itemAggregates[item.name]) {
+                      itemAggregates[item.name] = { quantity: 0, total: 0, price: item.price };
+                    }
+                    itemAggregates[item.name].quantity += item.quantity;
+                    itemAggregates[item.name].total += (item.price * item.quantity);
+                  });
+                });
+                
+                const aggregatedArray = Object.entries(itemAggregates).map(([name, data]) => ({ name, ...data }));
+                aggregatedArray.sort((a, b) => b.quantity - a.quantity);
+                
+                if (aggregatedArray.length === 0) {
+                  return <p className="text-gray-500 text-center py-8">No items sold today</p>;
+                }
+
+                return aggregatedArray.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center bg-white border border-gray-100 shadow-sm p-4 rounded-lg">
+                    <div className="flex items-center gap-4">
+                      <span className="bg-green-100 text-green-800 px-3 py-1.5 rounded-md text-sm font-bold">{item.quantity}x</span>
+                      <div>
+                        <p className="font-bold text-gray-800 text-lg">{item.name}</p>
+                        <p className="text-xs text-gray-500 mt-1">@ ${Number(item.price).toFixed(2)} each</p>
+                      </div>
+                    </div>
+                    <span className="font-bold text-xl text-green-600">${Number(item.total).toFixed(2)}</span>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
         </div>

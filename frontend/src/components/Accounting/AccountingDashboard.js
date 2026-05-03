@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { DollarSign, TrendingUp, TrendingDown, Plus, Users } from 'lucide-react';
-import { getTransactions, getFinancialSummary, addTransaction, recordSalary } from '../../services/firebaseService';
+import { DollarSign, TrendingUp, TrendingDown, Plus, Users, X } from 'lucide-react';
+import { getTransactions, getFinancialSummary, addTransaction, recordSalary, getAllOrders } from '../../services/firebaseService';
 
 function AccountingDashboard() {
   const { t } = useTranslation();
@@ -12,6 +12,7 @@ function AccountingDashboard() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddSalary, setShowAddSalary] = useState(false);
+  const [selectedReportOrder, setSelectedReportOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [newTransaction, setNewTransaction] = useState({
     type: 'expense',
@@ -229,7 +230,28 @@ function AccountingDashboard() {
                 </tr>
               ) : (
                 transactions.map(transaction => (
-                  <tr key={transaction.id} className="hover:bg-gray-50">
+                  <tr 
+                    key={transaction.id} 
+                    className={`hover:bg-gray-50 ${transaction.description?.startsWith('Order #') ? 'cursor-pointer' : ''}`}
+                    onClick={async () => {
+                      if (transaction.description?.startsWith('Order #')) {
+                        const orderNum = transaction.description.split('#')[1]?.trim();
+                        if (orderNum) {
+                          try {
+                            const allOrders = await getAllOrders();
+                            const order = allOrders.find(o => o.orderNumber === orderNum);
+                            if (order) {
+                              setSelectedReportOrder(order);
+                            } else {
+                              toast.error('Order details not found');
+                            }
+                          } catch (err) {
+                            toast.error('Failed to load order');
+                          }
+                        }
+                      }
+                    }}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {new Date(transaction.createdAt).toLocaleDateString()}
                     </td>
@@ -365,6 +387,69 @@ function AccountingDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Order Details Modal */}
+      {selectedReportOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto m-4 shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Order #{selectedReportOrder.orderNumber}</h2>
+              <button onClick={() => setSelectedReportOrder(null)} className="text-gray-500 hover:text-red-500 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6 text-sm bg-gray-50 p-4 rounded-lg">
+              <div>
+                <p className="text-gray-500 font-medium">{t('admin.inventory.date')}</p>
+                <p className="font-semibold text-gray-800">{new Date(selectedReportOrder.createdAt).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 font-medium">{t('kitchen.customer')}</p>
+                <p className="font-semibold text-gray-800">{selectedReportOrder.customerName || 'Walk-in'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 font-medium">{t('admin.reports.status')}</p>
+                <p className="font-medium mt-1">
+                  <span className={`px-2 py-1 rounded text-xs ${selectedReportOrder.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                    {selectedReportOrder.status}
+                  </span>
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 font-medium">{t('admin.reports.payment')}</p>
+                <p className="font-medium text-gray-800 mt-1 capitalize">{selectedReportOrder.paymentMethod || 'cash'}</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <span>{t('admin.reports.items')}</span>
+                <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full text-xs">{selectedReportOrder.items?.length || 0}</span>
+              </h3>
+              <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
+                {selectedReportOrder.items?.map((item, index) => (
+                  <div key={index} className="flex justify-between items-start pb-3 border-b border-gray-200 last:border-0 last:pb-0">
+                    <div>
+                      <p className="font-semibold text-gray-800">{item.name}</p>
+                      <p className="text-sm text-gray-500">{item.quantity}x @ ${item.price}</p>
+                      {item.notes && <p className="text-xs text-orange-500 mt-1 italic">Note: {item.notes}</p>}
+                    </div>
+                    <p className="font-bold text-gray-800">${item.total}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center text-lg font-black text-gray-800 bg-gray-50 p-4 rounded-lg">
+                <span>{t('admin.reports.total')}</span>
+                <span>${selectedReportOrder.total}</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
