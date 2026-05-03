@@ -94,7 +94,9 @@ function App() {
     );
   }
 
-
+  return (
+    <Router>
+      <div className="min-h-screen bg-gray-100">
         {/* 🔥 GLOBAL TOP BAR (only when logged in) */}
         {user && (
           <div className="bg-orange-600 text-white px-6 py-3 flex justify-between items-center">
