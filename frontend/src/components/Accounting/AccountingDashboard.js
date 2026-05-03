@@ -134,7 +134,7 @@ function AccountingDashboard() {
             <h3 className="text-lg font-semibold text-gray-700">{t('admin.accounting.income')}</h3>
             <TrendingUp className="text-green-500" size={24} />
           </div>
-          <p className="text-3xl font-bold text-green-600">₪{summary.totalIncome.toFixed(2)}</p>
+          <p className="text-3xl font-bold text-green-600">${summary.totalIncome.toFixed(2)}</p>
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
@@ -142,7 +142,7 @@ function AccountingDashboard() {
             <h3 className="text-lg font-semibold text-gray-700">{t('admin.accounting.expenses')}</h3>
             <TrendingDown className="text-red-500" size={24} />
           </div>
-          <p className="text-3xl font-bold text-red-600">₪{summary.totalExpense.toFixed(2)}</p>
+          <p className="text-3xl font-bold text-red-600">${summary.totalExpense.toFixed(2)}</p>
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
@@ -151,7 +151,7 @@ function AccountingDashboard() {
             <DollarSign className="text-blue-500" size={24} />
           </div>
           <p className={`text-3xl font-bold ${summary.profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-            ₪{summary.profit.toFixed(2)}
+            ${summary.profit.toFixed(2)}
           </p>
         </div>
       </div>
@@ -243,7 +243,7 @@ function AccountingDashboard() {
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                       }`}>
-                      ₪{transaction.amount.toFixed(2)}
+                      ${transaction.amount.toFixed(2)}
                     </td>
                   </tr>
                 ))
@@ -272,7 +272,7 @@ function AccountingDashboard() {
                 </select>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">{t('admin.salaries.amount')} (₪)</label>
+                <label className="block text-sm font-medium mb-2">{t('admin.salaries.amount')} ($)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -339,7 +339,7 @@ function AccountingDashboard() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">{t('admin.salaries.amount')} (₪)</label>
+                <label className="block text-sm font-medium mb-2">{t('admin.salaries.amount')} ($)</label>
                 <input
                   type="number"
                   step="0.01"

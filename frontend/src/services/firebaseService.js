@@ -10,7 +10,8 @@ import {
   orderBy,
   onSnapshot,
   deleteDoc,
-  getDoc
+  getDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 
 // ==================== ORDERS ====================
@@ -115,6 +116,33 @@ export const addTransaction = async (transactionData) => {
     return { id: docRef.id, ...newTransaction };
   } catch (error) {
     console.error('Error adding transaction:', error);
+    throw error;
+  }
+};
+
+// Update transaction
+export const updateTransaction = async (id, transactionData) => {
+  try {
+    const docRef = doc(db, 'transactions', id);
+    await updateDoc(docRef, {
+      ...transactionData,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating transaction:', error);
+    throw error;
+  }
+};
+
+// Delete transaction
+export const deleteTransaction = async (id) => {
+  try {
+    const docRef = doc(db, 'transactions', id);
+    await deleteDoc(docRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting transaction:', error);
     throw error;
   }
 };

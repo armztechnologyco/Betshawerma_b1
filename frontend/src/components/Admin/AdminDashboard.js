@@ -493,7 +493,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
       toast.error('No data to export');
       return;
     }
-    
+
     // Prepare headers and rows
     const headers = Object.keys(data[0]).filter(k => k !== 'id').join(',');
     const rows = data.map(obj => {
@@ -509,7 +509,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
-    
+
     link.setAttribute("href", url);
     link.setAttribute("download", `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
@@ -523,22 +523,46 @@ function AdminDashboard({ initialTab = 'overview' }) {
       return;
     }
 
-    const newSalary = {
-      id: Date.now(),
-      ...salaryData,
-      amount: parseFloat(salaryData.amount),
-      date: new Date().toISOString(),
-      month: salaryData.month,
-      year: salaryData.year
-    };
+    let updatedSalaries;
+    if (salaryData.id) {
+      // Edit existing
+      updatedSalaries = salaries.map(s => 
+        s.id === salaryData.id ? { ...salaryData, amount: parseFloat(salaryData.amount), month: salaryData.month, year: salaryData.year } : s
+      );
+      toast.success('Salary updated successfully');
+    } else {
+      // Add new
+      const newSalary = {
+        id: Date.now(),
+        ...salaryData,
+        amount: parseFloat(salaryData.amount),
+        date: new Date().toISOString(),
+        month: salaryData.month,
+        year: salaryData.year
+      };
+      updatedSalaries = [...salaries, newSalary];
+      toast.success('Salary recorded successfully');
+    }
 
-    const updatedSalaries = [...salaries, newSalary];
     setSalaries(updatedSalaries);
     localStorage.setItem('salaries', JSON.stringify(updatedSalaries));
 
-    toast.success('Salary recorded successfully');
     setShowAddSalary(false);
     setSalaryData({ employeeName: '', amount: '', month: selectedMonth, year: selectedYear });
+  };
+
+  const handleEditSalary = (salary) => {
+    setSalaryData(salary);
+    setShowAddSalary(true);
+  };
+
+  const handleDeleteSalary = (id) => {
+    if (window.confirm('Are you sure you want to delete this salary record?')) {
+      const updatedSalaries = salaries.filter(s => s.id !== id);
+      setSalaries(updatedSalaries);
+      localStorage.setItem('salaries', JSON.stringify(updatedSalaries));
+      toast.success('Salary deleted successfully');
+    }
   };
 
   const clearSalaryFilters = () => {
@@ -956,7 +980,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                 <h3 className="text-sm font-bold text-gray-500 uppercase group-hover:text-green-600 transition-colors">{t('admin.overview.totalSales')}</h3>
                 <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors"><TrendingUp className="text-green-500" size={20} /></div>
               </div>
-              <p className="text-3xl font-black text-gray-900">₪{stats.todayRevenue || 0}</p>
+              <p className="text-3xl font-black text-gray-900">${stats.todayRevenue || 0}</p>
             </div>
 
             <div
@@ -1004,8 +1028,8 @@ function AdminDashboard({ initialTab = 'overview' }) {
             <div className="lg:col-span-2 bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
               <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <div className="flex items-center gap-2">
-                   <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
-                   <h3 className="font-bold text-gray-800">{t('admin.overview.liveMonitor')}</h3>
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+                  <h3 className="font-bold text-gray-800">{t('admin.overview.liveMonitor')}</h3>
                 </div>
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{t('admin.overview.realtime')}</span>
               </div>
@@ -1023,7 +1047,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                       >
                         <div className="flex items-center gap-4">
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${order.status === 'ready' ? 'bg-green-100 text-green-600' :
-                              order.status === 'preparing' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'
+                            order.status === 'preparing' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'
                             }`}>
                             #{order.orderNumber}
                           </div>
@@ -1031,7 +1055,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                             <p className="font-bold text-gray-900">{order.customerName || t('admin.overview.walkIn')}</p>
                             <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                               <span className={`flex items-center gap-1 font-bold ${order.status === 'ready' ? 'text-green-500' :
-                                  order.status === 'preparing' ? 'text-blue-500' : 'text-orange-500'
+                                order.status === 'preparing' ? 'text-blue-500' : 'text-orange-500'
                                 }`}>
                                 <Circle size={8} fill="currentColor" /> {order.status.toUpperCase()}
                               </span>
@@ -1056,7 +1080,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-black text-gray-900">₪{order.total}</p>
+                          <p className="font-black text-gray-900">${order.total}</p>
                           <p className="text-[10px] text-gray-400 font-bold">
                             {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
@@ -1144,7 +1168,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                       </div>
                       <h3 className="font-semibold">{item.name}</h3>
                       <div className="flex items-center gap-2 text-sm text-gray-500"><Scale size={14} />{item.weight}</div>
-                      <p className="text-green-600 font-bold">₪{item.price}</p>
+                      <p className="text-green-600 font-bold">${item.price}</p>
                       <button className="mt-2 bg-green-500 text-white px-3 py-1 rounded w-full">Add to Order</button>
                     </div>
                   ))}
@@ -1156,9 +1180,9 @@ function AdminDashboard({ initialTab = 'overview' }) {
                 <h3 className="text-xl font-bold mb-4">Current Order</h3>
                 <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full border rounded-lg px-3 py-2 mb-4" placeholder="Customer name" />
                 <div className="border-t border-b py-4 mb-4 max-h-96 overflow-y-auto">
-                  {cart.map(item => (<div key={item.id} className="flex justify-between items-center mb-3"><div><p className="font-semibold">{item.name}</p><p className="text-sm">₪{item.price} each</p></div><div className="flex items-center gap-2"><button onClick={() => updateQuantity(item.id, -1)} className="bg-gray-200 px-2 rounded">-</button><span>{item.quantity}</span><button onClick={() => updateQuantity(item.id, 1)} className="bg-gray-200 px-2 rounded">+</button><button onClick={() => removeFromCart(item.id)} className="text-red-500">×</button></div></div>))}
+                  {cart.map(item => (<div key={item.id} className="flex justify-between items-center mb-3"><div><p className="font-semibold">{item.name}</p><p className="text-sm">${item.price} each</p></div><div className="flex items-center gap-2"><button onClick={() => updateQuantity(item.id, -1)} className="bg-gray-200 px-2 rounded">-</button><span>{item.quantity}</span><button onClick={() => updateQuantity(item.id, 1)} className="bg-gray-200 px-2 rounded">+</button><button onClick={() => removeFromCart(item.id)} className="text-red-500">×</button></div></div>))}
                 </div>
-                <div className="flex justify-between text-xl font-bold mb-4"><span>Total:</span><span>₪{calculateTotal()}</span></div>
+                <div className="flex justify-between text-xl font-bold mb-4"><span>Total:</span><span>${calculateTotal()}</span></div>
                 <button onClick={handleOrder} disabled={processing || !cart.length} className="w-full bg-blue-500 text-white py-3 rounded">{processing ? 'Processing...' : 'Complete Order'}</button>
               </div>
             </div>
@@ -1211,7 +1235,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                           <Scale size={14} />
                           <span>{item.weight}</span>
                         </div>
-                        <p className="text-green-600 font-bold text-lg mt-1">₪{item.price}</p>
+                        <p className="text-green-600 font-bold text-lg mt-1">${item.price}</p>
                         {item.includes && (
                           <p className="text-xs text-gray-500 mt-1">{item.includes}</p>
                         )}
@@ -1248,7 +1272,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                     <div key={item.id} className="flex justify-between items-center mb-3 pb-2 border-b">
                       <div>
                         <p className="font-semibold">{item.name}</p>
-                        <p className="text-sm text-gray-600">₪{item.price} each</p>
+                        <p className="text-sm text-gray-600">${item.price} each</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -1277,7 +1301,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
               </div>
               <div className="flex justify-between text-xl font-bold mb-4">
                 <span>{t('cashier.total')}:</span>
-                <span>₪{calculateTotal()}</span>
+                <span>${calculateTotal()}</span>
               </div>
               <button
                 onClick={handleOrder}
@@ -1317,7 +1341,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                       )}
                     </td>
                     <td className="px-6 py-4">{item.name}</td>
-                    <td className="px-6 py-4">₪{item.price}</td>
+                    <td className="px-6 py-4">${item.price}</td>
                     <td className="px-6 py-4">{item.weight}</td>
                     <td className="px-6 py-4"><button onClick={() => toggleItemAvailability(item)} className={`px-2 py-1 rounded text-xs ${item.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{item.available ? t('kitchen.ready') : t('cashier.unavailable', { name: '' })}</button></td>
                     <td className="px-6 py-4"><div className="flex gap-2"><button onClick={() => handleEditItem(item)} className="text-blue-600"><Edit2 size={18} /></button><button onClick={() => handleDeleteItem(item)} className="text-red-600"><Trash2 size={18} /></button></div></td>
@@ -1332,7 +1356,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
       {/* KITCHEN TAB */}
       {/* {activeTab === 'kitchen' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {kitchenOrders.map(order => (<div key={order.id} className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-yellow-500"><h3 className="text-xl font-bold">Order #{order.orderNumber}</h3><p className="text-gray-600">{order.customerName}</p><div className="border-t py-2 my-2">{order.items?.map((item, i) => (<div key={i} className="flex justify-between"><span>{item.quantity}x {item.name}</span><span>₪{item.price * item.quantity}</span></div>))}</div><div className="flex justify-between"><span className="font-bold">Total: ₪{order.total}</span><button onClick={() => updateOrderStatus(order.id, 'ready')} className="bg-green-500 text-white px-4 py-2 rounded">Mark Ready</button></div></div>))}
+            {kitchenOrders.map(order => (<div key={order.id} className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-yellow-500"><h3 className="text-xl font-bold">Order #{order.orderNumber}</h3><p className="text-gray-600">{order.customerName}</p><div className="border-t py-2 my-2">{order.items?.map((item, i) => (<div key={i} className="flex justify-between"><span>{item.quantity}x {item.name}</span><span>${item.price * item.quantity}</span></div>))}</div><div className="flex justify-between"><span className="font-bold">Total: ${order.total}</span><button onClick={() => updateOrderStatus(order.id, 'ready')} className="bg-green-500 text-white px-4 py-2 rounded">Mark Ready</button></div></div>))}
           </div>
         )} */}
 
@@ -1386,13 +1410,13 @@ function AdminDashboard({ initialTab = 'overview' }) {
                           </span>
                         )}
                       </div>
-                      <span className="font-bold">₪{item.price * item.quantity}</span>
+                      <span className="font-bold">${item.price * item.quantity}</span>
                     </div>
                   ))}
                 </div>
 
                 <div className="flex justify-between items-center mb-3">
-                  <span className="font-bold">Total: ₪{order.total}</span>
+                  <span className="font-bold">Total: ${order.total}</span>
                 </div>
 
                 {/* Countdown Timer Display */}
@@ -1483,8 +1507,8 @@ function AdminDashboard({ initialTab = 'overview' }) {
               const isLow = stockPercentage < 20;
 
               return (
-                <div 
-                  key={item} 
+                <div
+                  key={item}
                   onClick={() => setSelectedInventoryItem(item)}
                   className={`bg-white p-6 rounded-2xl shadow-sm border-t-4 transition-all hover:shadow-md cursor-pointer group ${isLow ? 'border-t-red-500' : 'border-t-green-500'}`}
                 >
@@ -1548,13 +1572,13 @@ function AdminDashboard({ initialTab = 'overview' }) {
             <div className="p-6 border-b border-gray-50 flex justify-between items-center">
               <h3 className="text-xl font-bold text-gray-900">{t('admin.inventory.history')}</h3>
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => setShowPurchaseFilter(!showPurchaseFilter)}
                   className={`p-2 transition-colors ${showPurchaseFilter ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                   <Filter size={20} />
                 </button>
-                <button 
+                <button
                   onClick={() => handleExportCSV(purchases, 'Purchases_Report')}
                   className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
@@ -1592,42 +1616,42 @@ function AdminDashboard({ initialTab = 'overview' }) {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {purchases
-                    .filter(p => 
+                    .filter(p =>
                       p.itemName.toLowerCase().includes(purchaseSearch.toLowerCase()) ||
                       (p.supplier && p.supplier.toLowerCase().includes(purchaseSearch.toLowerCase()))
                     )
                     .map((p, idx) => (
-                    <tr key={p.id || idx} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-semibold text-gray-900">{p.itemName}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {p.supplier || '—'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold">
-                          {p.quantity} {p.unit}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">₪{p.price}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-green-600 font-black text-sm">₪{p.totalCost}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                        <div className="flex justify-end gap-2">
-                          <button onClick={() => handleEditPurchase(p)} className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors">
-                            <Edit2 size={16} />
-                          </button>
-                          <button onClick={() => handleDeletePurchase(p.id)} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors">
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                      <tr key={p.id || idx} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="font-semibold text-gray-900">{p.itemName}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {p.supplier || '—'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold">
+                            {p.quantity} {p.unit}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${p.price}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-green-600 font-black text-sm">${p.totalCost}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={() => handleEditPurchase(p)} className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                              <Edit2 size={16} />
+                            </button>
+                            <button onClick={() => handleDeletePurchase(p.id)} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -1652,7 +1676,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                       <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5">{t('admin.inventory_drilldown.subtitle')}</p>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setSelectedInventoryItem(null)}
                     className="p-2 hover:bg-gray-200 rounded-full transition-colors"
                   >
@@ -1716,7 +1740,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                   )}
                 </div>
                 <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end">
-                  <button 
+                  <button
                     onClick={() => setSelectedInventoryItem(null)}
                     className="px-8 py-3 bg-gray-900 text-white font-bold rounded-2xl hover:bg-gray-800 transition-all shadow-lg"
                   >
@@ -1771,7 +1795,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
             <div className="bg-blue-50 rounded-lg p-4">
               <p className="text-sm text-gray-600">Total Salaries Paid</p>
               <p className="text-2xl font-bold text-blue-600">
-                ₪{salaries.filter(s => {
+                ${salaries.filter(s => {
                   if (salaryFilter.employeeName && !s.employeeName.toLowerCase().includes(salaryFilter.employeeName.toLowerCase())) return false;
                   if (salaryFilter.month !== 'all' && s.month !== parseInt(salaryFilter.month)) return false;
                   if (salaryFilter.year !== 'all' && s.year !== parseInt(salaryFilter.year)) return false;
@@ -1793,7 +1817,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
             <div className="bg-purple-50 rounded-lg p-4">
               <p className="text-sm text-gray-600">Average Salary</p>
               <p className="text-2xl font-bold text-purple-600">
-                ₪{(() => {
+                ${(() => {
                   const filtered = salaries.filter(s => {
                     if (salaryFilter.employeeName && !s.employeeName.toLowerCase().includes(salaryFilter.employeeName.toLowerCase())) return false;
                     if (salaryFilter.month !== 'all' && s.month !== parseInt(salaryFilter.month)) return false;
@@ -1807,13 +1831,13 @@ function AdminDashboard({ initialTab = 'overview' }) {
           </div>
 
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <table className="w-full"><thead className="bg-gray-50"><tr><th className="px-6 py-3">Employee</th><th className="px-6 py-3">Amount</th><th className="px-6 py-3">Month</th><th className="px-6 py-3">Year</th><th className="px-6 py-3">Date Paid</th></tr></thead>
+            <table className="w-full"><thead className="bg-gray-50"><tr><th className="px-6 py-3">Employee</th><th className="px-6 py-3">Amount</th><th className="px-6 py-3">Month</th><th className="px-6 py-3">Year</th><th className="px-6 py-3">Date Paid</th><th className="px-6 py-3">Actions</th></tr></thead>
               <tbody>{salaries.filter(s => {
                 if (salaryFilter.employeeName && !s.employeeName.toLowerCase().includes(salaryFilter.employeeName.toLowerCase())) return false;
                 if (salaryFilter.month !== 'all' && s.month !== parseInt(salaryFilter.month)) return false;
                 if (salaryFilter.year !== 'all' && s.year !== parseInt(salaryFilter.year)) return false;
                 return true;
-              }).map(s => (<tr key={s.id} className="border-t"><td className="px-6 py-4 font-medium">{s.employeeName}</td><td className="px-6 py-4 font-bold text-green-600">₪{s.amount}</td><td className="px-6 py-4">{months[s.month - 1]}</td><td className="px-6 py-4">{s.year}</td><td className="px-6 py-4">{new Date(s.date).toLocaleDateString()}</td></tr>))}</tbody>
+              }).map(s => (<tr key={s.id} className="border-t"><td className="px-6 py-4 font-medium">{s.employeeName}</td><td className="px-6 py-4 font-bold text-green-600">${s.amount}</td><td className="px-6 py-4">{months[s.month - 1]}</td><td className="px-6 py-4">{s.year}</td><td className="px-6 py-4">{new Date(s.date).toLocaleDateString()}</td><td className="px-6 py-4"><div className="flex gap-2"><button onClick={() => handleEditSalary(s)} className="text-blue-600 hover:text-blue-800"><Edit2 size={18} /></button><button onClick={() => handleDeleteSalary(s.id)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button></div></td></tr>))}</tbody>
             </table>
             {salaries.filter(s => {
               if (salaryFilter.employeeName && !s.employeeName.toLowerCase().includes(salaryFilter.employeeName.toLowerCase())) return false;
@@ -1841,7 +1865,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
               <div className="flex justify-between items-center p-6 border-b">
                 <h3 className="text-xl font-bold">Order Report</h3>
-                <button 
+                <button
                   onClick={() => handleExportCSV(reportData, 'Order_Report')}
                   className="text-blue-600 flex items-center gap-1 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
                 >
@@ -1859,7 +1883,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                       <td className="px-6 py-4">{new Date(order.createdAt).toLocaleDateString()}</td>
                       <td className="px-6 py-4">{order.customerName}</td>
                       <td className="px-6 py-4">{order.items?.length} items</td>
-                      <td className="px-6 py-4 font-bold">₪{order.total}</td>
+                      <td className="px-6 py-4 font-bold">${order.total}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded text-xs ${order.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                           {order.status}
@@ -1898,9 +1922,9 @@ function AdminDashboard({ initialTab = 'overview' }) {
       {activeTab === 'accounting' && (
         <div>
           <div className="grid grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.income')}</h3><p className="text-3xl font-bold text-green-600">₪{summary.totalIncome}</p></div>
-            <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.expenses')}</h3><p className="text-3xl font-bold text-red-600">₪{summary.totalExpense}</p></div>
-            <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.profit')}</h3><p className="text-3xl font-bold text-blue-600">₪{summary.profit}</p></div>
+            <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.income')}</h3><p className="text-3xl font-bold text-green-600">${summary.totalIncome}</p></div>
+            <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.expenses')}</h3><p className="text-3xl font-bold text-red-600">${summary.totalExpense}</p></div>
+            <div className="bg-white rounded-lg p-6"><h3>{t('admin.accounting.profit')}</h3><p className="text-3xl font-bold text-blue-600">${summary.profit}</p></div>
           </div>
           <div className="flex gap-4 mb-6">
             <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="border rounded px-3 py-2">
@@ -1923,7 +1947,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                     <td className="px-6 py-4">{t.description}</td>
                     <td className="px-6 py-4">{t.category}</td>
                     <td className="px-6 py-4"><span className={`px-2 py-1 rounded text-xs ${t.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{t.type}</span></td>
-                    <td className="px-6 py-4 text-right font-bold">₪{t.amount}</td>
+                    <td className="px-6 py-4 text-right font-bold">${t.amount}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1979,7 +2003,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
 
       {showAddPurchase && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.inventory.addPurchase')}</h2><input type="text" placeholder={t('admin.inventory.itemName')} className="w-full border rounded px-3 py-2 mb-3" value={purchaseForm.itemName} onChange={e => setPurchaseForm({ ...purchaseForm, itemName: e.target.value })} /><input type="number" placeholder={t('admin.inventory.quantity')} className="w-full border rounded px-3 py-2 mb-3" value={purchaseForm.quantity} onChange={e => setPurchaseForm({ ...purchaseForm, quantity: e.target.value })} /><input type="number" placeholder={t('admin.inventory.price')} className="w-full border rounded px-3 py-2 mb-3" value={purchaseForm.price} onChange={e => setPurchaseForm({ ...purchaseForm, price: e.target.value })} /><input type="text" placeholder={t('admin.inventory.supplier')} className="w-full border rounded px-3 py-2 mb-4" value={purchaseForm.supplier} onChange={e => setPurchaseForm({ ...purchaseForm, supplier: e.target.value })} /><div className="flex justify-end gap-3"><button onClick={() => setShowAddPurchase(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button onClick={savePurchase} className="px-4 py-2 bg-blue-500 text-white rounded">{t('admin.inventory.addPurchase')}</button></div></div></div>)}
 
-      {showAddSalary && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.salaries.addSalary')}</h2><input type="text" placeholder={t('admin.salaries.employeeName')} className="w-full border rounded px-3 py-2 mb-3" value={salaryData.employeeName} onChange={e => setSalaryData({ ...salaryData, employeeName: e.target.value })} /><input type="number" placeholder={t('admin.salaries.amount')} className="w-full border rounded px-3 py-2 mb-3" value={salaryData.amount} onChange={e => setSalaryData({ ...salaryData, amount: e.target.value })} /><select className="w-full border rounded px-3 py-2 mb-3" value={salaryData.month} onChange={e => setSalaryData({ ...salaryData, month: parseInt(e.target.value) })}>{months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}</select><select className="w-full border rounded px-3 py-2 mb-4" value={salaryData.year} onChange={e => setSalaryData({ ...salaryData, year: parseInt(e.target.value) })}>{years.map(y => <option key={y}>{y}</option>)}</select><div className="flex justify-end gap-3"><button onClick={() => setShowAddSalary(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button onClick={saveSalary} className="px-4 py-2 bg-green-500 text-white rounded">{t('admin.common.save')}</button></div></div></div>)}
+      {showAddSalary && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{salaryData.id ? t('admin.salaries.editSalary', 'Edit Salary') : t('admin.salaries.addSalary')}</h2><input type="text" placeholder={t('admin.salaries.employeeName')} className="w-full border rounded px-3 py-2 mb-3" value={salaryData.employeeName} onChange={e => setSalaryData({ ...salaryData, employeeName: e.target.value })} /><input type="number" placeholder={t('admin.salaries.amount')} className="w-full border rounded px-3 py-2 mb-3" value={salaryData.amount} onChange={e => setSalaryData({ ...salaryData, amount: e.target.value })} /><select className="w-full border rounded px-3 py-2 mb-3" value={salaryData.month} onChange={e => setSalaryData({ ...salaryData, month: parseInt(e.target.value) })}>{months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}</select><select className="w-full border rounded px-3 py-2 mb-4" value={salaryData.year} onChange={e => setSalaryData({ ...salaryData, year: parseInt(e.target.value) })}>{years.map(y => <option key={y}>{y}</option>)}</select><div className="flex justify-end gap-3"><button onClick={() => { setShowAddSalary(false); setSalaryData({ employeeName: '', amount: '', month: selectedMonth, year: selectedYear }); }} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button onClick={saveSalary} className="px-4 py-2 bg-green-500 text-white rounded">{t('admin.common.save')}</button></div></div></div>)}
 
       {showAddTransaction && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.accounting.addTransaction')}</h2><select className="w-full border rounded px-3 py-2 mb-3" value={newTransaction.type} onChange={e => setNewTransaction({ ...newTransaction, type: e.target.value })}><option value="expense">{t('admin.accounting.expenses')}</option><option value="income">{t('admin.accounting.income')}</option></select><input type="number" placeholder={t('admin.salaries.amount')} className="w-full border rounded px-3 py-2 mb-3" value={newTransaction.amount} onChange={e => setNewTransaction({ ...newTransaction, amount: e.target.value })} /><input type="text" placeholder={t('admin.accounting.description')} className="w-full border rounded px-3 py-2 mb-3" value={newTransaction.description} onChange={e => setNewTransaction({ ...newTransaction, description: e.target.value })} /><input type="text" placeholder={t('admin.accounting.category')} className="w-full border rounded px-3 py-2 mb-4" value={newTransaction.category} onChange={e => setNewTransaction({ ...newTransaction, category: e.target.value })} /><div className="flex justify-end gap-3"><button onClick={() => setShowAddTransaction(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button onClick={async (e) => { e.preventDefault(); await addTransaction({ ...newTransaction, amount: parseFloat(newTransaction.amount) }); toast.success(t('admin.common.success')); setShowAddTransaction(false); loadAccountingData(); }} className="px-4 py-2 bg-blue-500 text-white rounded">{t('admin.common.save')}</button></div></div></div>)}
 
@@ -2000,7 +2024,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
               />
 
               <div className="mb-3">
-                <label className="block text-sm font-medium mb-1">🇪🇬 Egyptian Price (₪) <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium mb-1">🇪🇬 Egyptian Price ($) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   placeholder="e.g., 140"
@@ -2013,7 +2037,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
               </div>
 
               <div className="mb-3">
-                <label className="block text-sm font-medium mb-1">🌍 Foreigner Price (₪) <span className="text-gray-400 font-normal text-xs">(leave blank to use same price)</span></label>
+                <label className="block text-sm font-medium mb-1">🌍 Foreigner Price ($) <span className="text-gray-400 font-normal text-xs">(leave blank to use same price)</span></label>
                 <input
                   type="number"
                   placeholder="e.g., 250"
@@ -2036,8 +2060,9 @@ function AdminDashboard({ initialTab = 'overview' }) {
                   if (numMatch) {
                     const num = parseFloat(numMatch[0]);
                     if (!isNaN(num)) {
-                      // If it contains "kg", assume kg, otherwise assume grams and divide by 1000
-                      updatedForm.weightInKg = val.toLowerCase().includes('kg') ? num : num / 1000;
+                      // If it contains "kg" or "كيلو", assume kg, otherwise assume grams and divide by 1000
+                      const isKg = val.toLowerCase().includes('kg') || val.includes('كيلو');
+                      updatedForm.weightInKg = isKg ? num : num / 1000;
                     }
                   } else if (val === '') {
                     updatedForm.weightInKg = '';
@@ -2169,7 +2194,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
               </div>
               <div>
                 <p className="text-gray-500 font-medium">{t('cashier.total')}</p>
-                <p className="font-bold text-lg text-green-600">₪{selectedReportOrder.total}</p>
+                <p className="font-bold text-lg text-green-600">${selectedReportOrder.total}</p>
               </div>
               <div className="col-span-2 border-t pt-2 mt-2">
                 <p className="text-gray-500 font-medium">{t('reports.timing_analysis')}</p>
@@ -2206,7 +2231,7 @@ function AdminDashboard({ initialTab = 'overview' }) {
                       {item.includes && <p className="text-xs text-gray-500 mt-1">{item.includes}</p>}
                     </div>
                   </div>
-                  <span className="font-bold text-gray-700">₪{(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="font-bold text-gray-700">${(item.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
               {(!selectedReportOrder.items || selectedReportOrder.items.length === 0) && (

@@ -210,7 +210,7 @@ function CashierDashboard({ userRole }) {
                     )}
 
                     <h3>{item.name}</h3>
-                    <p>₪{item.price}</p>
+                    <p>${item.price}</p>
 
                     <div className="flex gap-2 mt-2">
                       <button

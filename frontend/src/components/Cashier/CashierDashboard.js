@@ -411,7 +411,7 @@
 // //                         )}
 
 // //                         <h4 className="font-semibold text-lg">{item.name}</h4>
-// //                         <p className="text-gray-600">₪{item.price}</p>
+// //                         <p className="text-gray-600">${item.price}</p>
 // //                         <p className="text-sm text-gray-500">{item.weight}</p>
 // //                         {item.includes && (
 // //                           <p className="text-xs text-green-600 mt-1">{item.includes}</p>
@@ -498,7 +498,7 @@
 // //                   </div>
 // //                   <div className="flex items-center gap-2 text-sm text-gray-500">
 // //                     <DollarSign size={14} />
-// //                     <span>₪{item.price}</span>
+// //                     <span>${item.price}</span>
 // //                   </div>
 // //                   {item.includes && (
 // //                     <p className="text-xs text-green-600 mt-2">{item.includes}</p>
@@ -545,7 +545,7 @@
 // //                     <div className="flex justify-between items-start">
 // //                       <div className="flex-1">
 // //                         <p className="font-semibold">{item.name}</p>
-// //                         <p className="text-sm text-gray-600">₪{item.price || item.basePrice} each</p>
+// //                         <p className="text-sm text-gray-600">${item.price || item.basePrice} each</p>
 // //                         {item.extras && item.extras.length > 0 && (
 // //                           <div className="text-xs text-gray-500 mt-1">
 // //                             {item.extras.map(e => e.name).join(', ')}
@@ -578,7 +578,7 @@
 // //                       </div>
 // //                     </div>
 // //                     <div className="text-right font-semibold mt-1">
-// //                       ₪{item.totalPrice || (item.price * item.quantity)}
+// //                       ${item.totalPrice || (item.price * item.quantity)}
 // //                     </div>
 // //                   </div>
 // //                 ))
@@ -588,7 +588,7 @@
 // //             <div className="mb-4">
 // //               <div className="flex justify-between text-xl font-bold">
 // //                 <span>Total:</span>
-// //                 <span>₪{calculateTotal()}</span>
+// //                 <span>${calculateTotal()}</span>
 // //               </div>
 // //             </div>
 
@@ -615,7 +615,7 @@
 // //             </div>
 
 // //             <div className="bg-gray-50 p-4 rounded-lg mb-4">
-// //               <p className="text-sm text-gray-600">Base Price: ₪{selectedItem.basePrice}</p>
+// //               <p className="text-sm text-gray-600">Base Price: ${selectedItem.basePrice}</p>
 // //               <p className="text-sm text-gray-600">Weight: {selectedItem.weight}</p>
 // //             </div>
 
@@ -628,7 +628,7 @@
 // //                       <span className="text-2xl">{extra.icon}</span>
 // //                       <div>
 // //                         <p className="font-medium">{extra.name}</p>
-// //                         <p className="text-sm text-gray-500">+₪{extra.price}</p>
+// //                         <p className="text-sm text-gray-500">+${extra.price}</p>
 // //                       </div>
 // //                     </div>
 // //                     <input
@@ -675,22 +675,22 @@
 // //             <div className="bg-orange-50 p-4 rounded-lg mb-4">
 // //               <div className="flex justify-between mb-2">
 // //                 <span>Base Price:</span>
-// //                 <span>₪{selectedItem.basePrice}</span>
+// //                 <span>${selectedItem.basePrice}</span>
 // //               </div>
 // //               {customizations.extras.length > 0 && (
 // //                 <div className="flex justify-between mb-2">
 // //                   <span>Extras:</span>
-// //                   <span>+₪{customizations.extras.reduce((sum, e) => sum + e.price, 0)}</span>
+// //                   <span>+${customizations.extras.reduce((sum, e) => sum + e.price, 0)}</span>
 // //                 </div>
 // //               )}
 // //               <div className="border-t pt-2 mt-2">
 // //                 <div className="flex justify-between font-bold">
 // //                   <span>Total per item:</span>
-// //                   <span>₪{selectedItem.basePrice + customizations.extras.reduce((sum, e) => sum + e.price, 0)}</span>
+// //                   <span>${selectedItem.basePrice + customizations.extras.reduce((sum, e) => sum + e.price, 0)}</span>
 // //                 </div>
 // //                 <div className="flex justify-between font-bold text-lg mt-1">
 // //                   <span>Total for {customizations.quantity}:</span>
-// //                   <span className="text-green-600">₪{(selectedItem.basePrice + customizations.extras.reduce((sum, e) => sum + e.price, 0)) * customizations.quantity}</span>
+// //                   <span className="text-green-600">${(selectedItem.basePrice + customizations.extras.reduce((sum, e) => sum + e.price, 0)) * customizations.quantity}</span>
 // //                 </div>
 // //               </div>
 // //             </div>
@@ -797,7 +797,7 @@
 // //               </div>
 
 // //               <div className="mb-4">
-// //                 <label className="block font-semibold mb-2">Price (₪)</label>
+// //                 <label className="block font-semibold mb-2">Price ($)</label>
 // //                 <input
 // //                   type="number"
 // //                   name="price"
@@ -1064,7 +1064,7 @@
 //                 )}
 
 //                 <h3>{item.name}</h3>
-//                 <p>₪{item.price}</p>
+//                 <p>${item.price}</p>
 
 //                 <button
 //                   onClick={() => addToCart(item)}
@@ -1404,14 +1404,14 @@ function CashierDashboard({ userRole }) {
   //         <div style="border-bottom: 1px dashed #000; margin-bottom: 10px;"></div>
 
   //         <div>${order.items.map(item => {
-  //       return `<div class="item"><span>${item.quantity}x ${item.name}</span><span>₪${item.total.toFixed(2)}</span></div>`;
+  //       return `<div class="item"><span>${item.quantity}x ${item.name}</span><span>$${item.total.toFixed(2)}</span></div>`;
   //     }).join('')}</div>
 
   //         <div class="total">
-  //           <div class="summary-item" style="font-weight:normal;"><span>المجموع الفرعي:</span><span>₪${subtotal.toFixed(2)}</span></div>
-  //           <div class="summary-item" style="font-weight:normal;"><span>ضريبة القيمة المضافة (14%):</span><span>₪${vat.toFixed(2)}</span></div>
-  //           ${order.orderType === 'dinein' ? `<div class="summary-item" style="font-weight:normal;"><span>الخدمة (12%):</span><span>₪${service.toFixed(2)}</span></div>` : ''}
-  //           <div class="summary-item" style="font-size: 18px; margin-top: 5px;"><span>الإجمالي المستحق:</span><span>₪${total.toFixed(2)}</span></div>
+  //           <div class="summary-item" style="font-weight:normal;"><span>المجموع الفرعي:</span><span>$${subtotal.toFixed(2)}</span></div>
+  //           <div class="summary-item" style="font-weight:normal;"><span>ضريبة القيمة المضافة (14%):</span><span>$${vat.toFixed(2)}</span></div>
+  //           ${order.orderType === 'dinein' ? `<div class="summary-item" style="font-weight:normal;"><span>الخدمة (12%):</span><span>$${service.toFixed(2)}</span></div>` : ''}
+  //           <div class="summary-item" style="font-size: 18px; margin-top: 5px;"><span>الإجمالي المستحق:</span><span>$${total.toFixed(2)}</span></div>
   //         </div>
 
   //         <div class="footer">
@@ -1715,7 +1715,7 @@ function CashierDashboard({ userRole }) {
                         )}
 
                         <h4 className="font-semibold text-lg">{item.name}</h4>
-                        <p className="text-gray-600">₪{item.price}</p>
+                        <p className="text-gray-600">${item.price}</p>
                         <p className="text-sm text-gray-500">{item.weight}</p>
                         {item.includes && (
                           <p className="text-xs text-green-600 mt-1">{item.includes}</p>
@@ -1813,27 +1813,24 @@ function CashierDashboard({ userRole }) {
                       <div className="mt-1">
                         {item.foreignerPrice ? (
                           <div className="flex items-center gap-2">
-                            <span className={`font-bold text-sm px-1.5 py-0.5 rounded ${
-                              customerType === 'egyptian' ? 'bg-red-100 text-red-700' : 'text-gray-400 line-through'
-                            }`}>🇪🇬 ₪{item.price}</span>
-                            <span className={`font-bold text-sm px-1.5 py-0.5 rounded ${
-                              customerType === 'foreigner' ? 'bg-blue-100 text-blue-700' : 'text-gray-400 line-through'
-                            }`}>🌍 ₪{item.foreignerPrice}</span>
+                            <span className={`font-bold text-sm px-1.5 py-0.5 rounded ${customerType === 'egyptian' ? 'bg-red-100 text-red-700' : 'text-gray-400 line-through'
+                              }`}>🇪🇬 ${item.price}</span>
+                            <span className={`font-bold text-sm px-1.5 py-0.5 rounded ${customerType === 'foreigner' ? 'bg-blue-100 text-blue-700' : 'text-gray-400 line-through'
+                              }`}>🌍 ${item.foreignerPrice}</span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 text-sm text-gray-500">
                             <DollarSign size={14} />
-                            <span>₪{item.price}</span>
+                            <span>${item.price}</span>
                           </div>
                         )}
                       </div>
                       {item.includes && (
                         <p className="text-xs text-green-600 mt-2">{item.includes}</p>
                       )}
-                      <button className={`mt-3 text-white px-3 py-1 rounded w-full text-sm ${
-                        customerType === 'foreigner' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'
-                      }`}>
-                        {t('cashier.addToOrder')} — ₪{getItemPrice(item)}
+                      <button className={`mt-3 text-white px-3 py-1 rounded w-full text-sm ${customerType === 'foreigner' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'
+                        }`}>
+                        {t('cashier.addToOrder')} — ${getItemPrice(item)}
                       </button>
                     </div>
                   ))
@@ -1861,21 +1858,19 @@ function CashierDashboard({ userRole }) {
               <div className="flex rounded-lg overflow-hidden border border-gray-200">
                 <button
                   onClick={() => { setCustomerType('egyptian'); setCart([]); }}
-                  className={`flex-1 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-1 ${
-                    customerType === 'egyptian'
+                  className={`flex-1 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-1 ${customerType === 'egyptian'
                       ? 'bg-red-500 text-white'
                       : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   🇪🇬 Egyptian
                 </button>
                 <button
                   onClick={() => { setCustomerType('foreigner'); setCart([]); }}
-                  className={`flex-1 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-1 ${
-                    customerType === 'foreigner'
+                  className={`flex-1 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-1 ${customerType === 'foreigner'
                       ? 'bg-blue-500 text-white'
                       : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   🌍 Foreigner
                 </button>
@@ -1930,13 +1925,13 @@ function CashierDashboard({ userRole }) {
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <p className="font-semibold">{item.name}</p>
-                        <p className="text-sm text-gray-600">₪{item.price || item.basePrice} each</p>
+                        <p className="text-sm text-gray-600">${item.price || item.basePrice} each</p>
                         {item.extras && item.extras.length > 0 && (
                           <div className="text-xs text-gray-500 mt-1 space-y-0.5">
                             {item.extras.map((e, idx) => (
                               <div key={idx} className="flex justify-between max-w-[150px]">
                                 <span>+ {e.name}</span>
-                                <span>₪{e.price.toFixed(2)}</span>
+                                <span>${e.price.toFixed(2)}</span>
                               </div>
                             ))}
                           </div>
@@ -1968,7 +1963,7 @@ function CashierDashboard({ userRole }) {
                       </div>
                     </div>
                     <div className="text-right font-semibold mt-1">
-                      ₪{item.totalPrice || (item.price * item.quantity)}
+                      ${item.totalPrice || (item.price * item.quantity)}
                     </div>
                   </div>
                 ))
@@ -1978,21 +1973,21 @@ function CashierDashboard({ userRole }) {
             <div className="mb-4">
               <div className="flex justify-between text-gray-600 mb-1">
                 <span>{t('cashier.subtotal')}:</span>
-                <span>₪{calculateTotals().subtotal.toFixed(2)}</span>
+                <span>${calculateTotals().subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-600 mb-1">
                 <span>{t('cashier.vat')}:</span>
-                <span>₪{calculateTotals().vat.toFixed(2)}</span>
+                <span>${calculateTotals().vat.toFixed(2)}</span>
               </div>
               {orderType === 'dinein' && (
                 <div className="flex justify-between text-gray-600 mb-1">
                   <span>{t('cashier.service')}:</span>
-                  <span>₪{calculateTotals().service.toFixed(2)}</span>
+                  <span>${calculateTotals().service.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-xl font-bold border-t pt-2 mt-2">
                 <span>{t('cashier.total')}:</span>
-                <span>₪{calculateTotals().total.toFixed(2)}</span>
+                <span>${calculateTotals().total.toFixed(2)}</span>
               </div>
             </div>
 
@@ -2010,7 +2005,7 @@ function CashierDashboard({ userRole }) {
                 </div>
                 <div className="flex justify-between text-lg font-bold text-orange-600 border-t pt-2 mt-2">
                   <span>{t('cashier.change')}:</span>
-                  <span>₪{Math.max(0, (parseFloat(amountReceived) || 0) - calculateTotals().total).toFixed(2)}</span>
+                  <span>${Math.max(0, (parseFloat(amountReceived) || 0) - calculateTotals().total).toFixed(2)}</span>
                 </div>
               </div>
             )}
@@ -2038,7 +2033,7 @@ function CashierDashboard({ userRole }) {
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg mb-4">
-              <p className="text-sm text-gray-600">Base Price: ₪{selectedItem.basePrice}</p>
+              <p className="text-sm text-gray-600">Base Price: ${selectedItem.basePrice}</p>
               <p className="text-sm text-gray-600">Weight: {selectedItem.weight}</p>
             </div>
 
@@ -2051,7 +2046,7 @@ function CashierDashboard({ userRole }) {
                       <span className="text-2xl">{extra.icon}</span>
                       <div>
                         <p className="font-medium">{extra.name}</p>
-                        <p className="text-sm text-gray-500">+₪{extra.price}</p>
+                        <p className="text-sm text-gray-500">+${extra.price}</p>
                       </div>
                     </div>
                     <input
@@ -2098,22 +2093,22 @@ function CashierDashboard({ userRole }) {
             <div className="bg-orange-50 p-4 rounded-lg mb-4">
               <div className="flex justify-between mb-2">
                 <span>Base Price:</span>
-                <span>₪{selectedItem.basePrice}</span>
+                <span>${selectedItem.basePrice}</span>
               </div>
               {customizations.extras.length > 0 && (
                 <div className="flex justify-between mb-2">
                   <span>Extras:</span>
-                  <span>+₪{customizations.extras.reduce((sum, e) => sum + e.price, 0)}</span>
+                  <span>+${customizations.extras.reduce((sum, e) => sum + e.price, 0)}</span>
                 </div>
               )}
               <div className="border-t pt-2 mt-2">
                 <div className="flex justify-between font-bold">
                   <span>Total per item:</span>
-                  <span>₪{selectedItem.basePrice + customizations.extras.reduce((sum, e) => sum + e.price, 0)}</span>
+                  <span>${selectedItem.basePrice + customizations.extras.reduce((sum, e) => sum + e.price, 0)}</span>
                 </div>
                 <div className="flex justify-between font-bold text-lg mt-1">
                   <span>Total for {customizations.quantity}:</span>
-                  <span className="text-green-600">₪{(selectedItem.basePrice + customizations.extras.reduce((sum, e) => sum + e.price, 0)) * customizations.quantity}</span>
+                  <span className="text-green-600">${(selectedItem.basePrice + customizations.extras.reduce((sum, e) => sum + e.price, 0)) * customizations.quantity}</span>
                 </div>
               </div>
             </div>
@@ -2223,7 +2218,7 @@ function CashierDashboard({ userRole }) {
               </div>
 
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Egyptian Price (₪) 🇪🇬</label>
+                <label className="block font-semibold mb-2">Egyptian Price ($) 🇪🇬</label>
                 <input
                   type="number"
                   name="price"
@@ -2236,7 +2231,7 @@ function CashierDashboard({ userRole }) {
               </div>
 
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Foreigner Price (₪) 🌍 <span className="text-xs font-normal text-gray-400">(leave blank to use same price)</span></label>
+                <label className="block font-semibold mb-2">Foreigner Price ($) 🌍 <span className="text-xs font-normal text-gray-400">(leave blank to use same price)</span></label>
                 <input
                   type="number"
                   name="foreignerPrice"
@@ -2402,12 +2397,12 @@ function CashierDashboard({ userRole }) {
               <div key={i} style={{ marginBottom: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold' }}>
                   <span>{item.quantity}x {item.name}</span>
-                  <span>₪{(item.price * item.quantity).toFixed(2)}</span>
+                  <span>${(item.price * item.quantity).toFixed(2)}</span>
                 </div>
                 {item.extras && item.extras.length > 0 && item.extras.map((extra, idx) => (
                   <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', paddingRight: '15px' }}>
                     <span>+ {extra.name}</span>
-                    <span>₪{(extra.price * item.quantity).toFixed(2)}</span>
+                    <span>${(extra.price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -2417,31 +2412,31 @@ function CashierDashboard({ userRole }) {
           <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
               <span>{t('cashier.subtotal')}:</span>
-              <span>₪{receiptData.totals.subtotal.toFixed(2)}</span>
+              <span>${receiptData.totals.subtotal.toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
               <span>{t('cashier.vat')}:</span>
-              <span>₪{receiptData.totals.vat.toFixed(2)}</span>
+              <span>${receiptData.totals.vat.toFixed(2)}</span>
             </div>
             {receiptData.orderType === 'dinein' && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                 <span>{t('cashier.service')}:</span>
-                <span>₪{receiptData.totals.service.toFixed(2)}</span>
+                <span>${receiptData.totals.service.toFixed(2)}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '18px', marginTop: '5px', borderBottom: '1px solid #000', paddingBottom: '5px' }}>
               <span>{t('cashier.total')}:</span>
-              <span>₪{receiptData.totals.total.toFixed(2)}</span>
+              <span>${receiptData.totals.total.toFixed(2)}</span>
             </div>
             {receiptData.paymentMethod === 'cash' && (
               <div style={{ marginTop: '5px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                   <span>{t('cashier.amountReceived')}:</span>
-                  <span>₪{receiptData.amountReceived.toFixed(2)}</span>
+                  <span>${receiptData.amountReceived.toFixed(2)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold' }}>
                   <span>{t('cashier.change')}:</span>
-                  <span>₪{receiptData.change.toFixed(2)}</span>
+                  <span>${receiptData.change.toFixed(2)}</span>
                 </div>
               </div>
             )}
