@@ -1,25 +1,25 @@
 import React from 'react';
 import { TrendingUp, ShoppingBag, Clock, Activity, Circle, Users } from 'lucide-react';
 
-const OverviewTab = ({ stats, setActiveTab, users, kitchenOrders, orderTimers, formatTime, t }) => {
+const OverviewTab = ({ stats, setActiveTab, users, kitchenOrders, orderTimers, formatTime, t, onSalesClick, onOrdersClick }) => {
   if (!stats) return null;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div
-          onClick={() => setActiveTab('accounting')}
+          onClick={() => onSalesClick && onSalesClick()}
           className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4 border-green-500 cursor-pointer group"
         >
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-sm font-bold text-gray-500 uppercase group-hover:text-green-600 transition-colors">{t('admin.overview.totalSales')}</h3>
             <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors"><TrendingUp className="text-green-500" size={20} /></div>
           </div>
-          <p className="text-3xl font-black text-gray-900">₪{stats.todayRevenue || 0}</p>
+          <p className="text-3xl font-black text-gray-900">${Number(stats.todayRevenue || 0).toFixed(2)}</p>
         </div>
 
         <div
-          onClick={() => setActiveTab('reports')}
+          onClick={() => onOrdersClick && onOrdersClick()}
           className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4 border-blue-500 cursor-pointer group"
         >
           <div className="flex justify-between items-center mb-2">
@@ -115,7 +115,7 @@ const OverviewTab = ({ stats, setActiveTab, users, kitchenOrders, orderTimers, f
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-gray-900">₪{order.total}</p>
+                      <p className="font-black text-gray-900">${order.total}</p>
                       <p className="text-[10px] text-gray-400 font-bold">
                         {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>

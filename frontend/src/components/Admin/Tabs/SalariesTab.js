@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Download } from 'lucide-react';
+import { Plus, Download, Edit2, Trash2 } from 'lucide-react';
 
 const SalariesTab = ({ 
   salaries, 
@@ -11,6 +11,8 @@ const SalariesTab = ({
   setShowAddSalary, 
   handleExportCSV,
   users,
+  handleEditSalary,
+  handleDeleteSalary,
   t 
 }) => {
   const filteredSalaries = salaries.filter(s => {
@@ -43,7 +45,7 @@ const SalariesTab = ({
               ];
               const rows = filteredSalaries.map(s => [
                 s.employeeName,
-                `₪${s.amount}`,
+                `$${Number(s.amount || 0).toFixed(2)}`,
                 months[s.month - 1],
                 s.year,
                 new Date(s.date).toLocaleDateString()
@@ -115,7 +117,7 @@ const SalariesTab = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
           <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">{t('admin.accounting.salaries', { defaultValue: 'Total Salaries Paid' })}</p>
-          <p className="text-2xl font-black text-blue-900">₪{totalPaid}</p>
+          <p className="text-2xl font-black text-blue-900">${Number(totalPaid || 0).toFixed(2)}</p>
         </div>
         <div className="bg-green-50 rounded-2xl p-5 border border-green-100">
           <p className="text-xs font-bold text-green-600 uppercase tracking-widest mb-1">{t('admin.users.title', { defaultValue: 'Total Employees Paid' })}</p>
@@ -123,7 +125,7 @@ const SalariesTab = ({
         </div>
         <div className="bg-purple-50 rounded-2xl p-5 border border-purple-100">
           <p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-1">{t('admin.salaries.average', { defaultValue: 'Average Salary' })}</p>
-          <p className="text-2xl font-black text-purple-900">₪{averageSalary}</p>
+          <p className="text-2xl font-black text-purple-900">${Number(averageSalary || 0).toFixed(2)}</p>
         </div>
       </div>
 
@@ -135,17 +137,28 @@ const SalariesTab = ({
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.salaries.amount')}</th>
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.salaries.month')}</th>
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.salaries.year')}</th>
-              <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.inventory.date')}</th>
+              <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.inventory.date')}</th>
+              <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.users.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {filteredSalaries.map(s => (
               <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="px-6 py-4 font-bold text-gray-900">{s.employeeName}</td>
-                <td className="px-6 py-4 font-black text-green-600">₪{s.amount}</td>
+                <td className="px-6 py-4 font-black text-green-600">${Number(s.amount || 0).toFixed(2)}</td>
                 <td className="px-6 py-4 text-gray-600">{months[s.month - 1]}</td>
                 <td className="px-6 py-4 text-gray-600">{s.year}</td>
-                <td className="px-6 py-4 text-right text-gray-400">{new Date(s.date).toLocaleDateString()}</td>
+                <td className="px-6 py-4 text-gray-600">{new Date(s.date).toLocaleDateString()}</td>
+                <td className="px-6 py-4 text-right">
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => handleEditSalary(s)} className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                      <Edit2 size={16} />
+                    </button>
+                    <button onClick={() => handleDeleteSalary(s.id)} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

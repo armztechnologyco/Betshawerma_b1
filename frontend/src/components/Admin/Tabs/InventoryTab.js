@@ -130,8 +130,8 @@ const InventoryTab = ({
                   p.itemName,
                   p.supplier || '—',
                   `${p.quantity} ${p.unit}`,
-                  `₪${p.price}`,
-                  `₪${p.totalCost}`
+                  `$${p.price}`,
+                  `$${p.totalCost}`
                 ]);
                 handleExportCSV(headers, rows, 'Purchase_Report');
               }}
@@ -204,9 +204,9 @@ const InventoryTab = ({
                       {p.quantity} {p.unit}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">₪{p.price}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${Number(p.price || 0).toFixed(2)}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-green-600 font-black text-sm">₪{p.totalCost}</span>
+                    <span className="text-green-600 font-black text-sm">${Number(p.totalCost || 0).toFixed(2)}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                     <div className="flex justify-end gap-2">

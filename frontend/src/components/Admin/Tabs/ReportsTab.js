@@ -95,7 +95,7 @@ const ReportsTab = ({
                   order.customerName,
                   `${order.items?.length || 0} ${t('admin.overview.items')}`,
                   order.cashierName || t('admin.common.system'),
-                  `₪${order.total}`,
+                  `$${Number(order.total || 0).toFixed(2)}`,
                   t(`reports.status${order.status.charAt(0).toUpperCase() + order.status.slice(1)}`) || order.status
                 ]);
                 handleExportCSV(headers, rows, 'Order_Report');
@@ -127,7 +127,7 @@ const ReportsTab = ({
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">{order.customerName}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.items?.length || 0} {t('admin.overview.items')}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{order.cashierName || t('admin.common.system')}</td>
-                    <td className="px-6 py-4 whitespace-nowrap font-black text-gray-900">₪{order.total}</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-black text-gray-900">${Number(order.total || 0).toFixed(2)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                         order.status === 'completed' ? 'bg-green-50 text-green-600' : 

@@ -10,22 +10,23 @@ const AccountingTab = ({
   years, 
   transactions, 
   setShowAddTransaction, 
-  t 
+  t,
+  onOrderClick
 }) => {
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-2xl p-6 shadow-sm border-b-4 border-green-500">
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">{t('admin.accounting.income')}</h3>
-            <p className="text-3xl font-black text-green-600">₪{summary.totalIncome}</p>
+            <p className="text-3xl font-black text-green-600">${Number(summary.totalIncome || 0).toFixed(2)}</p>
         </div>
         <div className="bg-white rounded-2xl p-6 shadow-sm border-b-4 border-red-500">
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">{t('admin.accounting.expenses')}</h3>
-            <p className="text-3xl font-black text-red-600">₪{summary.totalExpense}</p>
+            <p className="text-3xl font-black text-red-600">${Number(summary.totalExpense || 0).toFixed(2)}</p>
         </div>
         <div className="bg-white rounded-2xl p-6 shadow-sm border-b-4 border-blue-500">
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">{t('admin.accounting.profit')}</h3>
-            <p className="text-3xl font-black text-blue-600">₪{summary.profit}</p>
+            <p className="text-3xl font-black text-blue-600">${Number(summary.profit || 0).toFixed(2)}</p>
         </div>
       </div>
 
@@ -71,7 +72,11 @@ const AccountingTab = ({
           </thead>
           <tbody className="divide-y divide-gray-50">
             {transactions.map(t_item => (
-              <tr key={t_item.id} className="hover:bg-gray-50/50 transition-colors">
+              <tr 
+                key={t_item.id} 
+                className={`transition-colors ${t_item.description?.startsWith('Order #') ? 'cursor-pointer hover:bg-blue-50/50' : 'hover:bg-gray-50/50'}`}
+                onClick={() => t_item.description?.startsWith('Order #') && onOrderClick && onOrderClick(t_item.description)}
+              >
                 <td className="px-6 py-4 whitespace-nowrap text-gray-600">{new Date(t_item.createdAt).toLocaleDateString()}</td>
                 <td className="px-6 py-4 font-medium text-gray-900">{t_item.description}</td>
                 <td className="px-6 py-4 text-gray-500"><span className="bg-gray-100 px-2 py-1 rounded text-[10px] font-bold uppercase">{t_item.category}</span></td>
@@ -83,7 +88,7 @@ const AccountingTab = ({
                     </span>
                 </td>
                 <td className={`px-6 py-4 text-right font-black ${t_item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                    ₪{t_item.amount}
+                    ${Number(t_item.amount || 0).toFixed(2)}
                 </td>
               </tr>
             ))}

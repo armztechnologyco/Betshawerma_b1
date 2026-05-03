@@ -149,6 +149,30 @@ export const getTransactionsByType = async (type) => {
   }
 };
 
+// Update transaction
+export const updateTransaction = async (id, data) => {
+  try {
+    const docRef = doc(db, 'transactions', id);
+    await updateDoc(docRef, { ...data, updatedAt: new Date().toISOString() });
+    return true;
+  } catch (error) {
+    console.error('Error updating transaction:', error);
+    throw error;
+  }
+};
+
+// Delete transaction
+export const deleteTransaction = async (id) => {
+  try {
+    const docRef = doc(db, 'transactions', id);
+    await deleteDoc(docRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting transaction:', error);
+    throw error;
+  }
+};
+
 // Get transactions by date range
 export const getTransactionsByDate = async (startDate, endDate) => {
   try {
@@ -301,7 +325,8 @@ export const getDashboardStats = async () => {
       preparingOrders: preparingOrders.length,
       totalOrdersToday: todayOrders.length,
       monthlyProfit: summary.profit,
-      monthlyRevenue: summary.totalIncome
+      monthlyRevenue: summary.totalIncome,
+      todayOrders: todayOrders
     };
   } catch (error) {
     console.error('Error getting dashboard stats:', error);

@@ -13,7 +13,7 @@ import {
 import ShiftTimer from '../Common/ShiftTimer';
 import { getCurrentUser, logoutUser, getAllUsers, registerUser, USER_ROLES, updateUserActiveStatus } from '../../services/authService';
 import {
-  getDashboardStats, addTransaction, getTransactions,
+  getDashboardStats, addTransaction, getTransactions, updateTransaction, deleteTransaction,
   getFinancialSummary, recordSalary, updateOrderStatus,
   subscribeToKitchenOrders, addPurchase, subscribeToPurchases,
   getAllOrders, deletePurchase, updatePurchase
@@ -115,6 +115,10 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
     month: 'all',
     year: 'all'
   });
+
+  // Today Overview modals state
+  const [showTodayItemsModal, setShowTodayItemsModal] = useState(false);
+  const [showTodayOrdersModal, setShowTodayOrdersModal] = useState(false);
 
 
 
@@ -221,6 +225,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
 
   // Salaries state
   const [salaries, setSalaries] = useState([]);
+  const [editingSalary, setEditingSalary] = useState(null);
 
   // Reports state
   const [reportData, setReportData] = useState([]);
@@ -441,11 +446,15 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
 
 
 
-  const loadSalaries = () => {
-    const savedSalaries = localStorage.getItem('salaries');
-    if (savedSalaries) setSalaries(JSON.parse(savedSalaries));
-    else setSalaries([]);
-  };
+  const loadSalaries = useCallback(async () => {
+    try {
+      const allTx = await getTransactions();
+      const salaryTx = allTx.filter(tx => tx.category === 'salary');
+      setSalaries(salaryTx);
+    } catch (error) {
+      console.error('Error loading salaries:', error);
+    }
+  }, []);
 
 
 
@@ -509,29 +518,58 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
 
 
 
-  const saveSalary = useCallback(() => {
+  const saveSalary = useCallback(async () => {
     if (!salaryData.employeeName || !salaryData.amount) {
       toast.error('Please fill all fields');
       return;
     }
 
-    const newSalary = {
-      id: Date.now(),
-      ...salaryData,
-      amount: parseFloat(salaryData.amount),
-      date: new Date().toISOString(),
-      month: salaryData.month,
-      year: salaryData.year
-    };
+    try {
+      if (editingSalary) {
+        await updateTransaction(editingSalary.id, {
+          ...salaryData,
+          amount: parseFloat(salaryData.amount),
+          description: `Salary for ${salaryData.employeeName}`
+        });
+        toast.success('Salary updated successfully');
+      } else {
+        await recordSalary(salaryData.employeeName, parseFloat(salaryData.amount), salaryData.month, salaryData.year);
+        toast.success('Salary recorded successfully');
+      }
+      
+      setShowAddSalary(false);
+      setEditingSalary(null);
+      setSalaryData({ employeeName: '', amount: '', month: selectedMonth, year: selectedYear });
+      loadSalaries();
+      loadAccountingData();
+    } catch (error) {
+      toast.error('Operation failed');
+    }
+  }, [salaryData, editingSalary, selectedMonth, selectedYear, loadSalaries, loadAccountingData]);
 
-    const updatedSalaries = [...salaries, newSalary];
-    setSalaries(updatedSalaries);
-    localStorage.setItem('salaries', JSON.stringify(updatedSalaries));
+  const handleEditSalary = useCallback((salary) => {
+    setEditingSalary(salary);
+    setSalaryData({
+      employeeName: salary.employeeName,
+      amount: salary.amount.toString(),
+      month: salary.month,
+      year: salary.year
+    });
+    setShowAddSalary(true);
+  }, []);
 
-    toast.success('Salary recorded successfully');
-    setShowAddSalary(false);
-    setSalaryData({ employeeName: '', amount: '', month: selectedMonth, year: selectedYear });
-  }, [salaryData, salaries, selectedMonth, selectedYear]);
+  const handleDeleteSalary = useCallback(async (id) => {
+    if (window.confirm('Are you sure you want to delete this salary record?')) {
+      try {
+        await deleteTransaction(id);
+        toast.success('Salary record deleted');
+        loadSalaries();
+        loadAccountingData();
+      } catch (error) {
+        toast.error('Failed to delete');
+      }
+    }
+  }, [loadSalaries, loadAccountingData]);
 
   const clearSalaryFilters = useCallback(() => {
     setSalaryFilter({
@@ -901,6 +939,8 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
           orderTimers={orderTimers}
           formatTime={formatTime}
           t={t}
+          onSalesClick={() => setShowTodayItemsModal(true)}
+          onOrdersClick={() => setShowTodayOrdersModal(true)}
         />
       )}
 
@@ -948,7 +988,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
                           <Scale size={14} />
                           <span>{item.weight}</span>
                         </div>
-                        <p className="text-green-600 font-bold text-lg mt-1">₪{item.price}</p>
+                        <p className="text-green-600 font-bold text-lg mt-1">${item.price}</p>
                         {item.includes && (
                           <p className="text-xs text-gray-500 mt-1">{item.includes}</p>
                         )}
@@ -984,7 +1024,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
                     <div key={item.id} className="flex justify-between items-center mb-3 pb-2 border-b">
                       <div>
                         <p className="font-semibold">{item.name}</p>
-                        <p className="text-sm text-gray-600">₪{item.price} each</p>
+                        <p className="text-sm text-gray-600">${item.price} each</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -1013,7 +1053,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
               </div>
               <div className="flex justify-between text-xl font-bold mb-4">
                 <span>{t('cashier.total')}:</span>
-                <span>₪{calculateTotal()}</span>
+                <span>${calculateTotal()}</span>
               </div>
               <button
                 onClick={handleOrder}
@@ -1238,6 +1278,8 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
           setShowAddSalary={setShowAddSalary}
           handleExportCSV={handleExportCSV}
           users={users}
+          handleEditSalary={handleEditSalary}
+          handleDeleteSalary={handleDeleteSalary}
           t={t}
         />
       )}
@@ -1270,6 +1312,22 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
           transactions={transactions}
           setShowAddTransaction={setShowAddTransaction}
           t={t}
+          onOrderClick={async (description) => {
+            const orderNum = description.split('#')[1]?.trim();
+            if (orderNum) {
+              try {
+                const allOrders = await getAllOrders();
+                const order = allOrders.find(o => o.orderNumber === orderNum);
+                if (order) {
+                  setSelectedReportOrder(order);
+                } else {
+                  toast.error('Order details not found');
+                }
+              } catch (err) {
+                toast.error('Failed to load order');
+              }
+            }
+          }}
         />
       )}
 
@@ -1339,7 +1397,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">{t('admin.inventory.price')} (₪)</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">{t('admin.inventory.price')} ($)</label>
                   <input 
                     type="number" 
                     placeholder="0.00" 
@@ -1363,7 +1421,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
               <div className="bg-orange-50 p-3 rounded-xl border border-orange-100 mt-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-orange-800 font-medium">Total Cost:</span>
-                  <span className="text-lg font-black text-orange-600">₪{(parseFloat(purchaseForm.quantity || 0) * parseFloat(purchaseForm.price || 0)).toFixed(2)}</span>
+                  <span className="text-lg font-black text-orange-600">${(parseFloat(purchaseForm.quantity || 0) * parseFloat(purchaseForm.price || 0)).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -1386,7 +1444,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
         </div>
       )}
 
-      {showAddSalary && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.salaries.addSalary')}</h2><input type="text" placeholder={t('admin.salaries.employeeName')} className="w-full border rounded px-3 py-2 mb-3" value={salaryData.employeeName} onChange={e => setSalaryData({ ...salaryData, employeeName: e.target.value })} /><input type="number" placeholder={t('admin.salaries.amount')} className="w-full border rounded px-3 py-2 mb-3" value={salaryData.amount} onChange={e => setSalaryData({ ...salaryData, amount: e.target.value })} /><select className="w-full border rounded px-3 py-2 mb-3" value={salaryData.month} onChange={e => setSalaryData({ ...salaryData, month: parseInt(e.target.value) })}>{months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}</select><select className="w-full border rounded px-3 py-2 mb-4" value={salaryData.year} onChange={e => setSalaryData({ ...salaryData, year: parseInt(e.target.value) })}>{years.map(y => <option key={y}>{y}</option>)}</select><div className="flex justify-end gap-3"><button onClick={() => setShowAddSalary(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button onClick={saveSalary} className="px-4 py-2 bg-green-500 text-white rounded">{t('admin.common.save')}</button></div></div></div>)}
+      {showAddSalary && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{editingSalary ? 'Edit Salary' : t('admin.salaries.addSalary')}</h2><input type="text" placeholder={t('admin.salaries.employeeName')} className="w-full border rounded px-3 py-2 mb-3" value={salaryData.employeeName} onChange={e => setSalaryData({ ...salaryData, employeeName: e.target.value })} /><input type="number" placeholder={t('admin.salaries.amount')} className="w-full border rounded px-3 py-2 mb-3" value={salaryData.amount} onChange={e => setSalaryData({ ...salaryData, amount: e.target.value })} /><select className="w-full border rounded px-3 py-2 mb-3" value={salaryData.month} onChange={e => setSalaryData({ ...salaryData, month: parseInt(e.target.value) })}>{months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}</select><select className="w-full border rounded px-3 py-2 mb-4" value={salaryData.year} onChange={e => setSalaryData({ ...salaryData, year: parseInt(e.target.value) })}>{years.map(y => <option key={y}>{y}</option>)}</select><div className="flex justify-end gap-3"><button onClick={() => setShowAddSalary(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button onClick={saveSalary} className="px-4 py-2 bg-green-500 text-white rounded">{t('admin.common.save')}</button></div></div></div>)}
 
       {showAddTransaction && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.accounting.addTransaction')}</h2><select className="w-full border rounded px-3 py-2 mb-3" value={newTransaction.type} onChange={e => setNewTransaction({ ...newTransaction, type: e.target.value })}><option value="expense">{t('admin.accounting.expenses')}</option><option value="income">{t('admin.accounting.income')}</option></select><input type="number" placeholder={t('admin.salaries.amount')} className="w-full border rounded px-3 py-2 mb-3" value={newTransaction.amount} onChange={e => setNewTransaction({ ...newTransaction, amount: e.target.value })} /><input type="text" placeholder={t('admin.accounting.description')} className="w-full border rounded px-3 py-2 mb-3" value={newTransaction.description} onChange={e => setNewTransaction({ ...newTransaction, description: e.target.value })} /><input type="text" placeholder={t('admin.accounting.category')} className="w-full border rounded px-3 py-2 mb-4" value={newTransaction.category} onChange={e => setNewTransaction({ ...newTransaction, category: e.target.value })} /><div className="flex justify-end gap-3"><button onClick={() => setShowAddTransaction(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button onClick={async (e) => { e.preventDefault(); await addTransaction({ ...newTransaction, amount: parseFloat(newTransaction.amount) }); toast.success(t('admin.common.success')); setShowAddTransaction(false); loadAccountingData(); }} className="px-4 py-2 bg-blue-500 text-white rounded">{t('admin.common.save')}</button></div></div></div>)}
 
@@ -1407,7 +1465,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
               />
 
               <div className="mb-3">
-                <label className="block text-sm font-medium mb-1">🇪🇬 Egyptian Price (₪) <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium mb-1">🇪🇬 Egyptian Price ($) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   placeholder="e.g., 140"
@@ -1420,7 +1478,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
               </div>
 
               <div className="mb-3">
-                <label className="block text-sm font-medium mb-1">🌍 Foreigner Price (₪) <span className="text-gray-400 font-normal text-xs">(leave blank to use same price)</span></label>
+                <label className="block text-sm font-medium mb-1">🌍 Foreigner Price ($) <span className="text-gray-400 font-normal text-xs">(leave blank to use same price)</span></label>
                 <input
                   type="number"
                   placeholder="e.g., 250"
@@ -1581,8 +1639,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
                 </p>
               </div>
               <div>
-                <p className="text-gray-500 font-medium">{t('cashier.total')}</p>
-                <p className="font-bold text-lg text-green-600">₪{selectedReportOrder.total}</p>
+                <p className="font-bold text-lg text-green-600">${selectedReportOrder.total}</p>
               </div>
               <div className="col-span-2 border-t pt-2 mt-2">
                 <p className="text-gray-500 font-medium">{t('reports.timing_analysis')}</p>
@@ -1619,7 +1676,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
                       {item.includes && <p className="text-xs text-gray-500 mt-1">{item.includes}</p>}
                     </div>
                   </div>
-                  <span className="font-bold text-gray-700">₪{(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="font-bold text-gray-700">${(item.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
               {(!selectedReportOrder.items || selectedReportOrder.items.length === 0) && (
@@ -1631,6 +1688,96 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
               <button onClick={() => setSelectedReportOrder(null)} className="px-6 py-2 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 transition-colors">
                 {t('reports.close')}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Today Orders Modal */}
+      {showTodayOrdersModal && stats?.todayOrders && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto m-4 shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Today's Orders</h2>
+              <button onClick={() => setShowTodayOrdersModal(false)} className="text-gray-500 hover:text-red-500 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr><th className="px-6 py-3">{t('cashier.receipt.orderNumber')}</th><th className="px-6 py-3">{t('admin.inventory.date')}</th><th className="px-6 py-3">{t('admin.users.fullName')}</th><th className="px-6 py-3">{t('admin.tabs.menu')}</th><th className="px-6 py-3">{t('admin.inventory.total')}</th><th className="px-6 py-3">{t('admin.reports.status')}</th></tr>
+              </thead>
+              <tbody>
+                {stats.todayOrders.map(order => (
+                  <tr key={order.id} className="border-t hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setSelectedReportOrder(order)}>
+                    <td className="px-6 py-4">#{order.orderNumber}</td>
+                    <td className="px-6 py-4">{new Date(order.createdAt).toLocaleTimeString()}</td>
+                    <td className="px-6 py-4">{order.customerName}</td>
+                    <td className="px-6 py-4">{order.items?.length} items</td>
+                    <td className="px-6 py-4 font-bold">${Number(order.total).toFixed(2)}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-xs ${order.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {order.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {stats.todayOrders.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">No orders today</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Today Items Sold Modal */}
+      {showTodayItemsModal && stats?.todayOrders && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto m-4 shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Items Sold Today</h2>
+              <button onClick={() => setShowTodayItemsModal(false)} className="text-gray-500 hover:text-red-500 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-3 mb-6">
+              {(() => {
+                const itemAggregates = {};
+                stats.todayOrders.forEach(order => {
+                  order.items?.forEach(item => {
+                    if (!itemAggregates[item.name]) {
+                      itemAggregates[item.name] = { quantity: 0, total: 0, price: item.price };
+                    }
+                    itemAggregates[item.name].quantity += item.quantity;
+                    itemAggregates[item.name].total += (item.price * item.quantity);
+                  });
+                });
+                
+                const aggregatedArray = Object.entries(itemAggregates).map(([name, data]) => ({ name, ...data }));
+                aggregatedArray.sort((a, b) => b.quantity - a.quantity);
+                
+                if (aggregatedArray.length === 0) {
+                  return <p className="text-gray-500 text-center py-8">No items sold today</p>;
+                }
+
+                return aggregatedArray.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center bg-white border border-gray-100 shadow-sm p-4 rounded-lg">
+                    <div className="flex items-center gap-4">
+                      <span className="bg-green-100 text-green-800 px-3 py-1.5 rounded-md text-sm font-bold">{item.quantity}x</span>
+                      <div>
+                        <p className="font-bold text-gray-800 text-lg">{item.name}</p>
+                        <p className="text-xs text-gray-500 mt-1">@ ${Number(item.price).toFixed(2)} each</p>
+                      </div>
+                    </div>
+                    <span className="font-bold text-xl text-green-600">${Number(item.total).toFixed(2)}</span>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
         </div>

@@ -436,7 +436,7 @@ function CashierDashboard({ user }) {
                         )}
 
                         <h4 className="font-semibold text-lg">{item.name}</h4>
-                        <p className="text-gray-600">₪{item.price}</p>
+                        <p className="text-gray-600">${item.price}</p>
                         <p className="text-sm text-gray-500">{item.weight}</p>
                         {item.includes && (
                           <p className="text-xs text-green-600 mt-1">{item.includes}</p>
@@ -530,14 +530,14 @@ function CashierDashboard({ user }) {
                         {item.foreignerPrice ? (
                           <div className="flex items-center gap-2">
                             <span className={`font-bold text-sm px-1.5 py-0.5 rounded ${customerType === 'egyptian' ? 'bg-red-100 text-red-700' : 'text-gray-400 line-through'
-                              }`}>🇪🇬 ₪{item.price}</span>
+                              }`}>🇪🇬 ${item.price}</span>
                             <span className={`font-bold text-sm px-1.5 py-0.5 rounded ${customerType === 'foreigner' ? 'bg-blue-100 text-blue-700' : 'text-gray-400 line-through'
-                              }`}>🌍 ₪{item.foreignerPrice}</span>
+                              }`}>🌍 ${item.foreignerPrice}</span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 text-sm text-gray-500">
                             <DollarSign size={14} />
-                            <span>₪{item.price}</span>
+                            <span>${item.price}</span>
                           </div>
                         )}
                       </div>
@@ -546,7 +546,7 @@ function CashierDashboard({ user }) {
                       )}
                       <button className={`mt-3 text-white px-3 py-1 rounded w-full text-sm ${customerType === 'foreigner' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'
                         }`}>
-                        {t('cashier.addToOrder')} — ₪{getItemPrice(item)}
+                        {t('cashier.addToOrder')} — ${getItemPrice(item)}
                       </button>
                     </div>
                   ))
@@ -641,7 +641,7 @@ function CashierDashboard({ user }) {
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <p className="font-semibold">{item.name}</p>
-                        <p className="text-sm text-gray-600">₪{item.price || item.basePrice} each</p>
+                        <p className="text-sm text-gray-600">${item.price || item.basePrice} each</p>
 
                         {item.notes && (
                           <p className="text-xs text-orange-600 mt-1">{t('cashier.note')}: {item.notes}</p>
@@ -670,7 +670,7 @@ function CashierDashboard({ user }) {
                       </div>
                     </div>
                     <div className="text-right font-semibold mt-1">
-                      ₪{item.totalPrice || (item.price * item.quantity)}
+                      ${item.totalPrice || (item.price * item.quantity)}
                     </div>
                   </div>
                 ))
@@ -680,21 +680,21 @@ function CashierDashboard({ user }) {
             <div className="mb-4">
               <div className="flex justify-between text-gray-600 mb-1">
                 <span>{t('cashier.subtotal')}:</span>
-                <span>₪{totals.subtotal.toFixed(2)}</span>
+                <span>${totals.subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-600 mb-1">
                 <span>{t('cashier.vat')}:</span>
-                <span>₪{totals.vat.toFixed(2)}</span>
+                <span>${totals.vat.toFixed(2)}</span>
               </div>
               {orderType === 'dinein' && (
                 <div className="flex justify-between text-gray-600 mb-1">
                   <span>{t('cashier.service')}:</span>
-                  <span>₪{totals.service.toFixed(2)}</span>
+                  <span>${totals.service.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-xl font-bold border-t pt-2 mt-2">
                 <span>{t('cashier.total')}:</span>
-                <span>₪{totals.total.toFixed(2)}</span>
+                <span>${totals.total.toFixed(2)}</span>
               </div>
             </div>
 
@@ -712,7 +712,7 @@ function CashierDashboard({ user }) {
                 </div>
                 <div className="flex justify-between text-lg font-bold text-orange-600 border-t pt-2 mt-2">
                   <span>{t('cashier.change')}:</span>
-                  <span>₪{Math.max(0, (parseFloat(amountReceived) || 0) - totals.total).toFixed(2)}</span>
+                  <span>${Math.max(0, (parseFloat(amountReceived) || 0) - totals.total).toFixed(2)}</span>
                 </div>
               </div>
             )}
@@ -740,7 +740,7 @@ function CashierDashboard({ user }) {
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg mb-4">
-              <p className="text-sm text-gray-600">{t('cashier.basePrice')}: ₪{selectedItem.basePrice}</p>
+              <p className="text-sm text-gray-600">{t('cashier.basePrice')}: ${selectedItem.basePrice}</p>
               <p className="text-sm text-gray-600">{t('cashier.weight')}: {selectedItem.weight}</p>
             </div>
 
@@ -800,7 +800,7 @@ function CashierDashboard({ user }) {
               <div className="flex justify-between mb-2 font-bold text-lg">
                 <span>{t('cashier.totalFor')} {customizations.quantity}:</span>
                 <span className="text-green-600">
-                  ₪{((selectedItem.basePrice + (customizations.options || []).reduce((sum, opt) => sum + (parseFloat(opt.price) || 0), 0)) * customizations.quantity).toFixed(2)}
+                  ${((selectedItem.basePrice + (customizations.options || []).reduce((sum, opt) => sum + (parseFloat(opt.price) || 0), 0)) * customizations.quantity).toFixed(2)}
                 </span>
               </div>
             </div>
@@ -1074,7 +1074,7 @@ function CashierDashboard({ user }) {
               <div key={i} style={{ marginBottom: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold' }}>
                   <span>{item.quantity}x {item.name}</span>
-                  <span>₪{(item.price * item.quantity).toFixed(2)}</span>
+                  <span>${(item.price * item.quantity).toFixed(2)}</span>
                 </div>
                 {item.options && item.options.length > 0 && (
                   <div style={{ fontSize: '11px', color: '#666', marginTop: '2px', paddingRight: '15px' }}>
@@ -1095,31 +1095,31 @@ function CashierDashboard({ user }) {
           <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
               <span>{t('cashier.subtotal', { lng: 'ar' })}:</span>
-              <span>₪{receiptData.totals.subtotal.toFixed(2)}</span>
+              <span>${receiptData.totals.subtotal.toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
               <span>{t('cashier.vat', { lng: 'ar' })}:</span>
-              <span>₪{receiptData.totals.vat.toFixed(2)}</span>
+              <span>${receiptData.totals.vat.toFixed(2)}</span>
             </div>
             {receiptData.orderType === 'dinein' && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                 <span>{t('cashier.service', { lng: 'ar' })}:</span>
-                <span>₪{receiptData.totals.service.toFixed(2)}</span>
+                <span>${receiptData.totals.service.toFixed(2)}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '18px', marginTop: '5px', borderBottom: '1px solid #000', paddingBottom: '5px' }}>
               <span>{t('cashier.total', { lng: 'ar' })}:</span>
-              <span>₪{receiptData.totals.total.toFixed(2)}</span>
+              <span>${receiptData.totals.total.toFixed(2)}</span>
             </div>
             {receiptData.paymentMethod === 'cash' && (
               <div style={{ marginTop: '5px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                   <span>{t('cashier.amountReceived', { lng: 'ar' })}:</span>
-                  <span>₪{receiptData.amountReceived.toFixed(2)}</span>
+                  <span>${receiptData.amountReceived.toFixed(2)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold' }}>
                   <span>{t('cashier.change', { lng: 'ar' })}:</span>
-                  <span>₪{receiptData.change.toFixed(2)}</span>
+                  <span>${receiptData.change.toFixed(2)}</span>
                 </div>
               </div>
             )}
