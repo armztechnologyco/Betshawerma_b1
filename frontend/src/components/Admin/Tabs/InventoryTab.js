@@ -3,6 +3,7 @@ import { Plus, Package, AlertCircle, Filter, Download, Search, Edit2, Trash2, X,
 
 const InventoryTab = ({ 
   inventoryData, 
+  liveInventory,
   setSelectedInventoryItem, 
   setShowAddPurchase, 
   purchases, 
@@ -18,6 +19,38 @@ const InventoryTab = ({
 }) => {
   const [supplierFilter, setSupplierFilter] = React.useState('all');
   const suppliers = [...new Set(purchases.map(p => p.supplier).filter(Boolean))];
+
+  // Combine computed inventoryData and liveInventory
+  const displayInventory = React.useMemo(() => {
+    if (liveInventory && liveInventory.length > 0) {
+      const merged = { ...inventoryData.details };
+      liveInventory.forEach(item => {
+        const itemKey = item.name;
+        // Case-insensitive match
+        const existingKey = Object.keys(merged).find(k => k.toLowerCase().trim() === itemKey.toLowerCase().trim());
+        
+        if (existingKey) {
+          merged[existingKey] = {
+            ...merged[existingKey],
+            remaining: item.currentStock,
+            isLive: true
+          };
+        } else {
+          merged[itemKey] = {
+            purchased: 0,
+            consumed: 0,
+            remaining: item.currentStock,
+            unit: item.unit || 'kg',
+            history: [],
+            isLive: true
+          };
+        }
+      });
+      return merged;
+    }
+    return inventoryData.details;
+  }, [inventoryData.details, liveInventory]);
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -35,9 +68,9 @@ const InventoryTab = ({
 
       {/* Inventory Status Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {Object.entries(inventoryData.details).map(([item, data]) => {
-          const stockPercentage = (data.remaining / data.purchased) * 100;
-          const isLow = stockPercentage < 20;
+        {Object.entries(displayInventory).map(([item, data]) => {
+          const stockPercentage = data.purchased > 0 ? (data.remaining / data.purchased) * 100 : 100;
+          const isLow = stockPercentage < 20 || data.remaining <= 2;
 
           return (
             <div 
@@ -52,6 +85,11 @@ const InventoryTab = ({
                 {isLow && (
                   <span className="flex items-center gap-1 text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded-full animate-pulse uppercase tracking-wider">
                     <AlertCircle size={10} /> {t('reports.delayed')}
+                  </span>
+                )}
+                {data.isLive && (
+                  <span className="flex items-center gap-1 text-[9px] font-black bg-blue-50 text-blue-500 px-2 py-0.5 rounded-md border border-blue-100 uppercase tracking-tighter">
+                    <Activity size={8} /> LIVE SYNC
                   </span>
                 )}
               </div>
@@ -83,7 +121,7 @@ const InventoryTab = ({
           );
         })}
 
-        {Object.keys(inventoryData.details).length === 0 && (
+        {Object.keys(displayInventory).length === 0 && (
           <div className="col-span-full bg-white p-12 rounded-2xl border-2 border-dashed border-gray-200 text-center">
             <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
               <Package className="text-gray-300" size={32} />
@@ -253,7 +291,7 @@ const InventoryTab = ({
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
-              {inventoryData.details[selectedInventoryItem]?.history?.length === 0 ? (
+              {displayInventory[selectedInventoryItem]?.history?.length === 0 ? (
                 <div className="text-center py-20">
                   <Activity className="mx-auto text-gray-200 mb-4" size={48} />
                   <p className="text-gray-400 italic">{t('admin.inventory_drilldown.no_records')}</p>
@@ -271,7 +309,7 @@ const InventoryTab = ({
                     </div>
                     <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100">
                       <p className="text-xs font-bold text-orange-600 uppercase mb-1">{t('admin.inventory_drilldown.remaining_stock')}</p>
-                      <p className="text-2xl font-black text-orange-700">{inventoryData.details[selectedInventoryItem].remaining.toFixed(2)} {inventoryData.details[selectedInventoryItem].unit}</p>
+                      <p className="text-2xl font-black text-orange-700">{displayInventory[selectedInventoryItem].remaining.toFixed(2)} {displayInventory[selectedInventoryItem].unit}</p>
                     </div>
                   </div>
 

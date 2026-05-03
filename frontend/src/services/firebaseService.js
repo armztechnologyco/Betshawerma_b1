@@ -475,3 +475,29 @@ export const subscribeToTransactions = (callback) => {
     callback([]);
   });
 };
+
+// ==================== LIVE INVENTORY ====================
+
+// Get live inventory status (managed by Cloud Functions)
+export const getLiveInventory = async () => {
+  try {
+    const invRef = collection(db, 'inventory');
+    const snapshot = await getDocs(invRef);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error fetching live inventory:', error);
+    throw error;
+  }
+};
+
+// Subscribe to live inventory
+export const subscribeToLiveInventory = (callback) => {
+  const invRef = collection(db, 'inventory');
+  return onSnapshot(invRef, (snapshot) => {
+    const inventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    callback(inventory);
+  }, (error) => {
+    console.error('Error subscribing to live inventory:', error);
+    callback([]);
+  });
+};

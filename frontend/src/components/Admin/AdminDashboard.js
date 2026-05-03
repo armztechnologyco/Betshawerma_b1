@@ -131,6 +131,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
   const [selectedInventoryItem, setSelectedInventoryItem] = useState(null);
   const [purchaseSearch, setPurchaseSearch] = useState('');
   const [showPurchaseFilter, setShowPurchaseFilter] = useState(false);
+  const [liveInventory, setLiveInventory] = useState([]);
 
   // Memoized inventory calculation
   const inventoryData = useMemo(() => {
@@ -350,7 +351,11 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
     }
     if (activeTab === 'purchases' || activeTab === 'overview') {
       const unsubscribe = subscribeToPurchases(setPurchases);
-      return () => unsubscribe();
+      const unsubscribeLive = subscribeToLiveInventory(setLiveInventory);
+      return () => {
+        unsubscribe();
+        unsubscribeLive();
+      };
     }
     if (activeTab === 'reports') {
       generateReport();
@@ -1258,6 +1263,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
         {activeTab === 'purchases' && (
           <InventoryTab
             inventoryData={inventoryData}
+            liveInventory={liveInventory}
             setSelectedInventoryItem={setSelectedInventoryItem}
             setShowAddPurchase={setShowAddPurchase}
             purchases={purchases}
