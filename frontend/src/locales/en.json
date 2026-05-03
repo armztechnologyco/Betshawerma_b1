@@ -43,7 +43,14 @@
     "loading": "Loading orders...",
     "fetchFailed": "Failed to fetch orders",
     "statusUpdated": "Order status updated to {{status}}",
-    "updateFailed": "Failed to update order status"
+    "updateFailed": "Failed to update order status",
+    "liveOperationalView": "Live Operational View",
+    "orderId": "Order ID",
+    "orderItems": "Order Items",
+    "startPrep": "Start Preparation",
+    "ready": "Ready",
+    "completeOrder": "Complete Order",
+    "noActive": "No active orders currently."
   },
   "cashier": {
     "dashboard": "Cashier Dashboard",
@@ -118,7 +125,26 @@
     "egyptian": "🇪🇬 Egyptian",
     "foreigner": "🌍 Foreigner",
     "clearCartWarning": "⚠️ Changing type clears the cart.",
-    "note": "Note"
+    "note": "Note",
+    "loadingMenu": "Loading menu...",
+    "noItems": "No items available in this category.",
+    "addFirstItem": "Click \"Add New Item\" to add menu items.",
+    "editItem": "Edit Item",
+    "itemImage": "Item Image",
+    "uploading": "Uploading...",
+    "chooseImage": "Choose Image",
+    "imageDesc": "Recommended: 300x300px, Max 2MB",
+    "itemName": "Item Name",
+    "egyPrice": "Egyptian Price (₪) 🇪🇬",
+    "forPrice": "Foreigner Price (₪) 🌍",
+    "forPriceDesc": "(leave blank to use same price)",
+    "pricePlaceholder": "e.g., 140",
+    "weightInKg": "Weight in kg (for inventory)",
+    "category": "Category",
+    "includesOptional": "Includes (Optional)",
+    "itemAvailable": "Item Available",
+    "update": "Update",
+    "add": "Add"
   },
   "admin": {
     "dashboard": "Admin Dashboard",
@@ -162,7 +188,13 @@
       "supplier": "Supplier",
       "history": "Purchase History",
       "price": "Price",
-      "date": "Date"
+      "date": "Date",
+      "stockMonitoring": "Monitor stock levels and manage ingredient purchases",
+      "noInventoryData": "No Inventory Data",
+      "startAddingPurchases": "Start adding ingredient purchases to track your real-time stock levels automatically.",
+      "addFirstPurchase": "Add your first purchase →",
+      "allSuppliers": "All Suppliers",
+      "noPurchases": "No purchase records found"
     },
     "salaries": {
       "title": "Salaries Management",
@@ -180,13 +212,17 @@
       "status": "Status",
       "generate": "Generate Report",
       "download": "Download CSV",
-      "all": "All Statuses"
+      "all": "All Statuses",
+      "selectDateRange": "Please select date range"
     },
     "users": {
       "title": "User Management",
       "fullName": "Full Name",
       "email": "Email",
       "role": "Role",
+      "role_admin": "Admin",
+      "role_cashier": "Cashier",
+      "role_chef": "Chef",
       "shift": "Shift",
       "actions": "Actions",
       "addNew": "Add New User",
@@ -196,7 +232,11 @@
       "shiftEnd": "Shift End",
       "creating": "Creating...",
       "createUser": "Create User",
-      "updateUser": "Update User"
+      "updateUser": "Update User",
+      "deleteSelfError": "Cannot delete yourself",
+      "deleted": "{{name}} deleted",
+      "updated": "User updated",
+      "updateFailed": "Update failed"
     },
     "accounting": {
       "income": "Total Income",
@@ -205,7 +245,8 @@
       "addTransaction": "Add Transaction",
       "description": "Description",
       "category": "Category",
-      "type": "Type"
+      "type": "Type",
+      "salaries": "Salaries"
     },
     "common": {
       "save": "Save",
@@ -218,53 +259,26 @@
       "confirmDelete": "Are you sure you want to delete this item?",
       "confirmDeleteUser": "Are you sure you want to delete this user?",
       "success": "Operation successful",
-      "failed": "Operation failed"
-    },
-    "inventory_drilldown": {
-      "title": "Consumption Detail History",
-      "subtitle": "Detailed consumption history log",
-      "log": "Detailed Log",
-      "order": "Order",
-      "menuItem": "Menu Item",
-      "qty": "Qty",
-      "consumed": "Consumed",
-      "date": "Date",
-      "close": "Close Report",
-      "no_records": "No consumption records found for this item.",
-      "total_purchased": "Total Purchased",
-      "total_consumed": "Total Consumed",
-      "remaining_stock": "Remaining Stock"
+      "failed": "Operation failed",
+      "system": "System",
+      "initialize": "Initialize Categories"
     }
   },
   "reports": {
     "delayed": "Delayed",
-    "on_time": "On Time",
+    "onTime": "On Time",
+    "inProgress": "In Progress",
     "expected": "Expected",
     "actual": "Actual",
+    "timing": "Timing",
     "timing_analysis": "Timing Analysis",
     "order_items": "Order Items",
     "no_items": "No items details available.",
-    "close": "Close"
-  },
-  "kitchen": {
-    "completeOrder": "Complete Order",
-    "markReady": "Mark Ready",
-    "noActive": "No active orders currently."
-  },
-  "menu_edit": {
-    "weight_kg": "Weight in kg (for inventory)",
-    "no_inventory_link": "-- No Inventory Link --",
-    "prep_time": "Preparation Time (minutes)",
-    "prep_time_desc": "How long this item takes to prepare (will show countdown in kitchen)",
-    "item_image": "Item Image",
-    "upload_image": "Upload Image",
-    "includes": "Includes (e.g., Fries + Drink)",
-    "available_for_sale": "Available for sale"
-  },
-  "app": {
-    "loading": "Loading...",
-    "welcome": "Welcome, {{name}}",
-    "logout": "Logout"
+    "close": "Close",
+    "statusPending": "Pending",
+    "statusPreparing": "Preparing",
+    "statusReady": "Ready",
+    "statusCompleted": "Completed"
   },
   "options": {
     "title": "Options",
@@ -287,7 +301,8 @@
     "saved": "Option saved",
     "saveFailed": "Failed to save option",
     "updated": "Option updated",
-    "added": "Option added"
+    "added": "Option added",
+    "subtitle": "Customizations & Modifiers"
   },
   "units": {
     "kg": "Kg",

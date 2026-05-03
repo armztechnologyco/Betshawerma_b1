@@ -29,7 +29,7 @@ const SalariesTab = ({
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">{t('admin.salaries.title')}</h2>
-          <p className="text-sm text-gray-500">Record and track staff payroll</p>
+          <p className="text-sm text-gray-500">{t('admin.salaries.stockMonitoring', { defaultValue: 'Record and track staff payroll' })}</p>
         </div>
         <div className="flex gap-2">
           <button 
@@ -58,13 +58,13 @@ const SalariesTab = ({
             onClick={() => setShowAddSalary(true)} 
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 font-bold shadow-lg shadow-green-100 transition-all active:scale-95"
           >
-            <Plus size={18} /> Add Salary
+            <Plus size={18} /> {t('admin.salaries.addSalary')}
           </button>
         </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Filters</h3>
+        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">{t('admin.reports.status', { defaultValue: 'Filters' })}</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('admin.salaries.employeeName')}</label>
@@ -73,7 +73,7 @@ const SalariesTab = ({
               value={salaryFilter.employeeName} 
               onChange={(e) => setSalaryFilter({ ...salaryFilter, employeeName: e.target.value })} 
             >
-              <option value="all">All Employees</option>
+              <option value="all">{t('admin.reports.all')}</option>
               {users.map(u => (
                 <option key={u.id} value={u.name}>{u.name}</option>
               ))}
@@ -86,7 +86,7 @@ const SalariesTab = ({
               value={salaryFilter.month} 
               onChange={(e) => setSalaryFilter({ ...salaryFilter, month: e.target.value })}
             >
-              <option value="all">All Months</option>
+              <option value="all">{t('admin.reports.all')}</option>
               {months.map((month, i) => (<option key={i} value={i + 1}>{month}</option>))}
             </select>
           </div>
@@ -97,7 +97,7 @@ const SalariesTab = ({
               value={salaryFilter.year} 
               onChange={(e) => setSalaryFilter({ ...salaryFilter, year: e.target.value })}
             >
-              <option value="all">All Years</option>
+              <option value="all">{t('admin.reports.all')}</option>
               {years.map(year => (<option key={year} value={year}>{year}</option>))}
             </select>
           </div>
@@ -114,15 +114,15 @@ const SalariesTab = ({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
-          <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">Total Salaries Paid</p>
+          <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">{t('admin.accounting.salaries', { defaultValue: 'Total Salaries Paid' })}</p>
           <p className="text-2xl font-black text-blue-900">₪{totalPaid}</p>
         </div>
         <div className="bg-green-50 rounded-2xl p-5 border border-green-100">
-          <p className="text-xs font-bold text-green-600 uppercase tracking-widest mb-1">Total Employees Paid</p>
+          <p className="text-xs font-bold text-green-600 uppercase tracking-widest mb-1">{t('admin.users.title', { defaultValue: 'Total Employees Paid' })}</p>
           <p className="text-2xl font-black text-green-900">{uniqueEmployees}</p>
         </div>
         <div className="bg-purple-50 rounded-2xl p-5 border border-purple-100">
-          <p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-1">Average Salary</p>
+          <p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-1">{t('admin.salaries.average', { defaultValue: 'Average Salary' })}</p>
           <p className="text-2xl font-black text-purple-900">₪{averageSalary}</p>
         </div>
       </div>
@@ -131,11 +131,11 @@ const SalariesTab = ({
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50/50">
-              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Employee</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Month</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Year</th>
-              <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Date Paid</th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.salaries.employeeName')}</th>
+              <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.salaries.amount')}</th>
+              <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.salaries.month')}</th>
+              <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.salaries.year')}</th>
+              <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.inventory.date')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -152,7 +152,7 @@ const SalariesTab = ({
         </table>
         {filteredSalaries.length === 0 && (
           <div className="text-center py-12 text-gray-400 italic">
-            No salary records found for the current filters.
+            {t('admin.inventory.noPurchases', { defaultValue: 'No salary records found for the current filters.' })}
           </div>
         )}
       </div>

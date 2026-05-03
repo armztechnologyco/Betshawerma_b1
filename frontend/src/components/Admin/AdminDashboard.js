@@ -30,7 +30,9 @@ import {
   subscribeToOptions,
   addOption,
   updateOption,
-  deleteOption
+  deleteOption,
+  uploadImage,
+  deleteImage
 } from '../../services/menuService';
 import { db } from '../../firebase';
 import i18n from '../../i18n';
@@ -577,8 +579,8 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
   const handleLogout = useCallback(async () => {
     await logoutUser();
     navigate('/login');
-    toast.success('Logged out successfully');
-  }, [navigate]);
+    toast.success(t('shiftTimer.logoutSuccess'));
+  }, [navigate, t]);
 
   // Menu CRUD Operations
 
@@ -622,6 +624,10 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
   const handleDeleteItem = useCallback(async (item) => {
     if (window.confirm(`Delete ${item.name}?`)) {
       try {
+        // Phase 1: Keep storage clean
+        if (item.imagePath) {
+          await deleteImage(item.imagePath);
+        }
         await deleteMenuItem(item.id);
         toast.success(`${item.name} deleted`);
       } catch (error) {
@@ -632,15 +638,13 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (file && file.type.startsWith('image/') && file.size <= 2 * 1024 * 1024) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-        setEditForm({ ...editForm, image: reader.result, imageFile: file });
-      };
-      reader.readAsDataURL(file);
+    if (file && file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024) {
+      // Create local preview URL (doesn't save to DB yet)
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+      setEditForm({ ...editForm, imageFile: file });
     } else {
-      toast.error('Invalid image file. Max 2MB');
+      toast.error('Invalid image file. Max 5MB');
     }
   };
 
@@ -648,26 +652,48 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
 
   const handleSaveItem = useCallback(async () => {
     if (!editForm.name || !editForm.price || !editForm.weight) {
-      toast.error('Please fill all required fields');
+      toast.error(t('admin.common.requiredFields', { defaultValue: 'Please fill all required fields' }));
       return;
     }
 
-    const itemData = {
-      name: editForm.name,
-      price: parseFloat(editForm.price),
-      foreignerPrice: editForm.foreignerPrice ? parseFloat(editForm.foreignerPrice) : null,
-      weight: editForm.weight,
-      weightInKg: parseFloat(editForm.weightInKg) || 0,
-      linkedInventoryItem: editForm.linkedInventoryItem || '',
-      preparationTime: parseInt(editForm.preparationTime) || 5,
-      image: editForm.image || '🍽️',
-      basePrice: parseFloat(editForm.basePrice || editForm.price),
-      includes: editForm.includes,
-      category: editForm.category,
-      available: editForm.available
-    };
+    setSubmitting(true);
+    let imageUrl = editingItem?.imageUrl || null;
+    let imagePath = editingItem?.imagePath || null;
 
     try {
+      // 1. Handle Image Upload if a new file was selected
+      if (editForm.imageFile) {
+        // Delete old image if it exists
+        if (editingItem?.imagePath) {
+          await deleteImage(editingItem.imagePath);
+        }
+
+        const uploadRes = await uploadImage(editingItem?.id || 'new', editForm.imageFile);
+        if (uploadRes.success) {
+          imageUrl = uploadRes.url;
+          imagePath = uploadRes.path;
+        } else {
+          toast.error('Image upload failed, but saving item...');
+        }
+      }
+
+      const itemData = {
+        name: editForm.name,
+        price: parseFloat(editForm.price),
+        foreignerPrice: editForm.foreignerPrice ? parseFloat(editForm.foreignerPrice) : null,
+        weight: editForm.weight,
+        weightInKg: parseFloat(editForm.weightInKg) || 0,
+        linkedInventoryItem: editForm.linkedInventoryItem || '',
+        preparationTime: parseInt(editForm.preparationTime) || 5,
+        imageUrl: imageUrl, // Real URL
+        imagePath: imagePath, // Storage Path
+        image: imageUrl || '🍽️', // Fallback for legacy views
+        basePrice: parseFloat(editForm.basePrice || editForm.price),
+        includes: editForm.includes,
+        category: editForm.category,
+        available: editForm.available
+      };
+
       if (editingItem) {
         await updateMenuItem(editingItem.id, itemData);
         toast.success(`${itemData.name} updated`);
@@ -682,8 +708,10 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
     } catch (error) {
       toast.error('Operation failed');
       console.error(error);
+    } finally {
+      setSubmitting(false);
     }
-  }, [editForm, editingItem]);
+  }, [editForm, editingItem, t]);
 
   const toggleItemAvailability = useCallback(async (item) => {
     try {
@@ -700,7 +728,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
 
   // Cashier functions
   const addToCart = useCallback((item) => {
-    const cartItem = { ...item, quantity: 1, extras: [], totalPrice: item.price };
+    const cartItem = { ...item, quantity: 1, options: [], totalPrice: item.price };
     setCart(prev => [...prev, cartItem]);
     toast.success(t('cashier.addedToCart', { name: item.name }));
   }, [t]);
@@ -801,10 +829,10 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
   }, [editUserData, selectedUser, fetchUsers]);
 
   const handleDeleteUser = useCallback(async (userId, userName) => {
-    if (userId === user?.uid) return toast.error("Cannot delete yourself");
-    if (window.confirm(`Delete ${userName}?`)) {
+    if (userId === user?.uid) return toast.error(t('admin.users.deleteSelfError'));
+    if (window.confirm(`${t('admin.common.delete')} ${userName}?`)) {
       await deleteDoc(doc(db, 'users', userId));
-      toast.success(`${userName} deleted`);
+      toast.success(t('admin.users.deleted', { name: userName }));
       fetchUsers();
     }
   }, [user, fetchUsers]);
@@ -812,7 +840,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
   // Report generation
   const generateReport = useCallback(async () => {
     if (!reportFilter.fromDate || !reportFilter.toDate) {
-      toast.error('Please select date range');
+      toast.error(t('admin.reports.selectDateRange'));
       return;
     }
 
@@ -931,7 +959,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
                     ))
                 ) : (
                   <div className="col-span-3 text-center py-8 text-gray-500">
-                    No items available in this category. {user?.role === 'admin' && 'Click "Add Item" to add menu items.'}
+                    {t('cashier.noItems')} {user?.role === 'admin' && t('cashier.addFirstItem')}
                   </div>
                 )}
               </div>
@@ -1028,7 +1056,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">{editingCategory ? 'Edit Category' : 'Add Category'}</h2>
+              <h2 className="text-xl font-bold">{editingCategory ? t('admin.common.edit') : t('cashier.add')}</h2>
               <button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }} className="text-gray-500 hover:text-gray-700">
                 <X size={22} />
               </button>
@@ -1258,9 +1286,9 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
       </div>
 
       {/* Modals */}
-      {showAddUser && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.users.addNew')}</h2><form onSubmit={handleAddUserSubmit}><input type="text" placeholder={t('admin.users.fullName')} className="w-full border rounded px-3 py-2 mb-3" value={newUserData.name} onChange={e => setNewUserData({ ...newUserData, name: e.target.value })} required /><input type="email" placeholder={t('admin.users.email')} className="w-full border rounded px-3 py-2 mb-3" value={newUserData.email} onChange={e => setNewUserData({ ...newUserData, email: e.target.value })} required /><input type="password" placeholder={t('admin.users.password')} className="w-full border rounded px-3 py-2 mb-3" value={newUserData.password} onChange={e => setNewUserData({ ...newUserData, password: e.target.value })} required /><select className="w-full border rounded px-3 py-2 mb-3" value={newUserData.role} onChange={e => setNewUserData({ ...newUserData, role: e.target.value })}><option value={USER_ROLES.ADMIN}>Admin</option><option value={USER_ROLES.CASHIER}>Cashier</option><option value={USER_ROLES.CHEF}>Chef</option></select><div className="grid grid-cols-2 gap-3 mb-3"><input type="time" placeholder={t('admin.users.shiftStart')} className="border rounded px-3 py-2" value={newUserData.shiftStart} onChange={e => setNewUserData({ ...newUserData, shiftStart: e.target.value })} /><input type="time" placeholder={t('admin.users.shiftEnd')} className="border rounded px-3 py-2" value={newUserData.shiftEnd} onChange={e => setNewUserData({ ...newUserData, shiftEnd: e.target.value })} /></div><div className="flex justify-end gap-3"><button type="button" onClick={() => setShowAddUser(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button type="submit" disabled={submitting} className="px-4 py-2 bg-blue-500 text-white rounded">{submitting ? t('admin.users.creating') : t('admin.users.createUser')}</button></div></form></div></div>)}
+      {showAddUser && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.users.addNew')}</h2><form onSubmit={handleAddUserSubmit}><input type="text" placeholder={t('admin.users.fullName')} className="w-full border rounded px-3 py-2 mb-3" value={newUserData.name} onChange={e => setNewUserData({ ...newUserData, name: e.target.value })} required /><input type="email" placeholder={t('admin.users.email')} className="w-full border rounded px-3 py-2 mb-3" value={newUserData.email} onChange={e => setNewUserData({ ...newUserData, email: e.target.value })} required /><input type="password" placeholder={t('admin.users.password')} className="w-full border rounded px-3 py-2 mb-3" value={newUserData.password} onChange={e => setNewUserData({ ...newUserData, password: e.target.value })} required /><select className="w-full border rounded px-3 py-2 mb-3" value={newUserData.role} onChange={e => setNewUserData({ ...newUserData, role: e.target.value })}><option value={USER_ROLES.ADMIN}>{t('admin.users.role_admin', { defaultValue: 'Admin' })}</option><option value={USER_ROLES.CASHIER}>{t('admin.users.role_cashier', { defaultValue: 'Cashier' })}</option><option value={USER_ROLES.CHEF}>{t('admin.users.role_chef', { defaultValue: 'Chef' })}</option></select><div className="grid grid-cols-2 gap-3 mb-3"><input type="time" placeholder={t('admin.users.shiftStart')} className="border rounded px-3 py-2" value={newUserData.shiftStart} onChange={e => setNewUserData({ ...newUserData, shiftStart: e.target.value })} /><input type="time" placeholder={t('admin.users.shiftEnd')} className="border rounded px-3 py-2" value={newUserData.shiftEnd} onChange={e => setNewUserData({ ...newUserData, shiftEnd: e.target.value })} /></div><div className="flex justify-end gap-3"><button type="button" onClick={() => setShowAddUser(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button type="submit" disabled={submitting} className="px-4 py-2 bg-blue-500 text-white rounded">{submitting ? t('admin.users.creating') : t('admin.users.createUser')}</button></div></form></div></div>)}
 
-      {showEditUser && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.users.edit')}</h2><form onSubmit={handleUpdateUser}><input type="text" placeholder={t('admin.users.fullName')} className="w-full border rounded px-3 py-2 mb-3" value={editUserData.name} onChange={e => setEditUserData({ ...editUserData, name: e.target.value })} required /><select className="w-full border rounded px-3 py-2 mb-3" value={editUserData.role} onChange={e => setEditUserData({ ...editUserData, role: e.target.value })}><option value={USER_ROLES.ADMIN}>Admin</option><option value={USER_ROLES.CASHIER}>Cashier</option><option value={USER_ROLES.CHEF}>Chef</option></select><div className="grid grid-cols-2 gap-3 mb-3"><input type="time" className="border rounded px-3 py-2" value={editUserData.shiftStart} onChange={e => setEditUserData({ ...editUserData, shiftStart: e.target.value })} /><input type="time" className="border rounded px-3 py-2" value={editUserData.shiftEnd} onChange={e => setEditUserData({ ...editUserData, shiftEnd: e.target.value })} /></div><div className="flex justify-end gap-3"><button type="button" onClick={() => setShowEditUser(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">{t('admin.common.update')}</button></div></form></div></div>)}
+      {showEditUser && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 max-w-md w-full"><h2 className="text-2xl font-bold mb-4">{t('admin.users.edit')}</h2><form onSubmit={handleUpdateUser}><input type="text" placeholder={t('admin.users.fullName')} className="w-full border rounded px-3 py-2 mb-3" value={editUserData.name} onChange={e => setEditUserData({ ...editUserData, name: e.target.value })} required /><select className="w-full border rounded px-3 py-2 mb-3" value={editUserData.role} onChange={e => setEditUserData({ ...editUserData, role: e.target.value })}><option value={USER_ROLES.ADMIN}>{t('admin.users.role_admin', { defaultValue: 'Admin' })}</option><option value={USER_ROLES.CASHIER}>{t('admin.users.role_cashier', { defaultValue: 'Cashier' })}</option><option value={USER_ROLES.CHEF}>{t('admin.users.role_chef', { defaultValue: 'Chef' })}</option></select><div className="grid grid-cols-2 gap-3 mb-3"><input type="time" className="border rounded px-3 py-2" value={editUserData.shiftStart} onChange={e => setEditUserData({ ...editUserData, shiftStart: e.target.value })} /><input type="time" className="border rounded px-3 py-2" value={editUserData.shiftEnd} onChange={e => setEditUserData({ ...editUserData, shiftEnd: e.target.value })} /></div><div className="flex justify-end gap-3"><button type="button" onClick={() => setShowEditUser(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button><button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">{t('admin.common.update')}</button></div></form></div></div>)}
 
       {showAddPurchase && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -1460,13 +1488,16 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
                 </div>
               </div>
 
-              <input
-                type="text"
-                placeholder={t('admin.inventory.itemName')}
-                className="w-full border rounded px-3 py-2 mb-3"
-                value={editForm.image}
-                onChange={e => setEditForm({ ...editForm, image: e.target.value })}
-              />
+              <div className="mb-3">
+                <label className="block text-sm font-medium mb-1">{t('menu_edit.emoji_fallback', { defaultValue: 'Emoji Fallback (Optional)' })}</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 🍔"
+                  className="w-full border rounded px-3 py-2"
+                  value={editForm.image}
+                  onChange={e => setEditForm({ ...editForm, image: e.target.value })}
+                />
+              </div>
 
               <input
                 type="text"
@@ -1493,9 +1524,27 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
               </label>
 
               <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 border rounded">{t('admin.common.cancel')}</button>
-                <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
-                  {editingItem ? t('admin.common.update') : t('admin.common.save')}
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 border rounded"
+                  disabled={submitting}
+                >
+                  {t('admin.common.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-orange-500 text-white rounded font-bold disabled:bg-gray-400"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      {t('admin.common.saving', { defaultValue: 'Saving...' })}
+                    </span>
+                  ) : (
+                    editingItem ? t('admin.common.update') : t('admin.common.save')
+                  )}
                 </button>
               </div>
             </form>

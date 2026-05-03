@@ -40,18 +40,18 @@ const MenuTab = ({
                 for (const cat of defaults) {
                   await addCategory(cat);
                 }
-                toast.success('Default categories initialized');
+                toast.success(t('admin.common.success'));
               }}
               className="bg-orange-500 text-white px-4 py-2 rounded-lg"
             >
-              Initialize Categories
+              {t('admin.common.initialize', { defaultValue: 'Initialize Categories' })}
             </button>
           )}
           <button 
             onClick={() => { setEditingCategory(null); setShowCategoryModal(true); }}
             className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2"
           >
-            <Plus size={18} /> Category
+            <Plus size={18} /> {t('admin.sidebar.menu')}
           </button>
           <button onClick={handleAddItem} className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2">
             <Plus size={18} /> {t('admin.inventory.addPurchase')}
@@ -66,7 +66,7 @@ const MenuTab = ({
                 onClick={() => setSelectedCategory(cat.id)} 
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition-all ${selectedCategory === cat.id ? (cat.color || 'bg-gray-500') + ' text-white shadow-md' : 'bg-white border text-gray-600 hover:border-orange-200'}`}
               >
-                {cat.name}
+                {t(`cashier.categories.${cat.id}`, { defaultValue: cat.name })}
               </button>
               <button onClick={() => { setEditingCategory(cat); setShowCategoryModal(true); }} className="text-gray-400 hover:text-blue-500 p-1"><Edit2 size={14}/></button>
             </div>
@@ -89,11 +89,20 @@ const MenuTab = ({
             {(menuItems[selectedCategory] || []).map(item => (
               <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="px-6 py-4">
-                  {item.image && (item.image.startsWith('data:image') || item.image.startsWith('http')) ? (
-                    <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-lg shadow-sm" />
+                  {/* Phase 1: Storage URLs only — no Base64 */}
+                  {(item.imageUrl?.startsWith('https://') || item.image?.startsWith('https://')) ? (
+                    <img
+                      src={item.imageUrl || item.image}
+                      alt={item.name}
+                      className="w-12 h-12 object-cover rounded-lg shadow-sm"
+                      loading="lazy"
+                    />
                   ) : (
-                    <span className="text-2xl w-12 h-12 flex items-center justify-center bg-gray-50 rounded-lg">{item.image || '🍽️'}</span>
+                    <span className="text-2xl w-12 h-12 flex items-center justify-center bg-gray-50 rounded-lg">
+                      {item.image?.startsWith('http') || item.image?.startsWith('data:') ? '🍽️' : (item.image || '🍽️')}
+                    </span>
                   )}
+
                 </td>
                 <td className="px-6 py-4 font-bold text-gray-900">{item.name}</td>
                 <td className="px-6 py-4">
@@ -108,7 +117,7 @@ const MenuTab = ({
                         onClick={() => toggleItemAvailability(item)} 
                         className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${item.available ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}
                     >
-                        {item.available ? t('kitchen.ready') : t('cashier.unavailable', { name: '' })}
+                        {item.available ? t('kitchen.ready') : t('reports.statusPending')}
                     </button>
                 </td>
                 <td className="px-6 py-4 text-right">
@@ -123,7 +132,7 @@ const MenuTab = ({
         </table>
         {(menuItems[selectedCategory] || []).length === 0 && (
             <div className="p-12 text-center text-gray-400 italic">
-                No items in this category yet.
+                {t('cashier.noItems')}
             </div>
         )}
       </div>
@@ -133,7 +142,7 @@ const MenuTab = ({
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">🛠️ {t('options.title')}</h2>
-            <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest font-bold">Customizations & Modifiers</p>
+            <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest font-bold">{t('options.subtitle', { defaultValue: 'Customizations & Modifiers' })}</p>
           </div>
           <button
             onClick={() => { setEditingOption(null); setShowOptionModal(true); }}
@@ -166,9 +175,9 @@ const MenuTab = ({
                   </button>
                   <button
                     onClick={async () => {
-                      if (!window.confirm(`Delete ${opt.name}?`)) return;
+                      if (!window.confirm(`${t('admin.common.delete')} ${opt.name}?`)) return;
                       try { await deleteOption(opt.id); toast.success(t('options.deleted')); }
-                      catch { toast.error('Delete failed'); }
+                      catch { toast.error(t('admin.common.failed')); }
                     }}
                     className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   >

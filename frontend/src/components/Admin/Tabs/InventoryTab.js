@@ -23,7 +23,7 @@ const InventoryTab = ({
       <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <div>
           <h2 className="text-3xl font-extrabold text-gray-900">{t('admin.inventory.title')}</h2>
-          <p className="text-gray-500 mt-1">Monitor stock levels and manage ingredient purchases</p>
+          <p className="text-gray-500 mt-1">{t('admin.inventory.stockMonitoring')}</p>
         </div>
         <button
           onClick={() => setShowAddPurchase(true)}
@@ -88,13 +88,13 @@ const InventoryTab = ({
             <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
               <Package className="text-gray-300" size={32} />
             </div>
-            <h3 className="text-gray-900 font-bold text-lg">No Inventory Data</h3>
-            <p className="text-gray-500 max-w-xs mx-auto mt-2">Start adding ingredient purchases to track your real-time stock levels automatically.</p>
+            <h3 className="text-gray-900 font-bold text-lg">{t('admin.inventory.noInventoryData')}</h3>
+            <p className="text-gray-500 max-w-xs mx-auto mt-2">{t('admin.inventory.startAddingPurchases')}</p>
             <button
               onClick={() => setShowAddPurchase(true)}
               className="mt-6 text-orange-600 font-bold hover:underline"
             >
-              Add your first purchase →
+              {t('admin.inventory.addFirstPurchase')}
             </button>
           </div>
         )}
@@ -150,7 +150,7 @@ const InventoryTab = ({
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                 <input
                   type="text"
-                  placeholder="Search by item name..."
+                  placeholder={t('cashier.specialInstructionsPlaceholder')} // Or a search-specific key
                   className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                   value={purchaseSearch}
                   onChange={(e) => setPurchaseSearch(e.target.value)}
@@ -161,7 +161,7 @@ const InventoryTab = ({
                 onChange={(e) => setSupplierFilter(e.target.value)}
                 className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
               >
-                <option value="all">All Suppliers</option>
+                <option value="all">{t('admin.inventory.allSuppliers')}</option>
                 {suppliers.map(s => (
                   <option key={s} value={s}>{s}</option>
                 ))}
@@ -225,7 +225,7 @@ const InventoryTab = ({
         </div>
         {purchases.length === 0 && (
           <div className="text-center py-12 text-gray-400 italic">
-            No purchase records found
+            {t('admin.inventory.noPurchases')}
           </div>
         )}
       </div>

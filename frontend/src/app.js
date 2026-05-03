@@ -16,6 +16,7 @@ import AdminDashboard from './components/Admin/AdminDashboard';
 
 import ShiftTimer from './components/Common/ShiftTimer';
 import LanguageSwitcher from './components/Common/LanguageSwitcher';
+import NetworkStatus from './components/Common/NetworkStatus';
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -73,33 +74,13 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-100">
-
-
-
-        
+        {/* Phase 1: Global network status banner */}
+        <NetworkStatus />
 
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
 
-<Route
-  path="/"
-  element={
-    <Navigate
-      to={
-        user
-          ? user.role === 'cashier'
-            ? '/cashier'
-            : user.role === 'chef'
-            ? '/kitchen'
-            : user.role === 'admin'
-            ? '/admin'
-            : '/login'
-          : '/login'
-      }
-    />
-  }
-/>
           {/* CASHIER */}
           <Route
             path="/cashier"

@@ -51,13 +51,13 @@ const ReportsTab = ({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Cashier</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">{t('cashier.receipt.cashier')}</label>
             <select 
               value={reportFilter.cashierName} 
               onChange={(e) => setReportFilter({ ...reportFilter, cashierName: e.target.value })} 
               className="w-full border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white"
             >
-              <option value="all">All Cashiers</option>
+              <option value="all">{t('admin.reports.all')}</option>
               {cashiers.map(cashier => (
                 <option key={cashier.id} value={cashier.name}>{cashier.name}</option>
               ))}
@@ -93,8 +93,8 @@ const ReportsTab = ({
                   `#${order.orderNumber}`,
                   new Date(order.createdAt).toLocaleDateString(),
                   order.customerName,
-                  `${order.items?.length || 0} items`,
-                  order.cashierName || 'System',
+                  `${order.items?.length || 0} ${t('admin.overview.items')}`,
+                  order.cashierName || t('admin.common.system'),
                   `₪${order.total}`,
                   t(`reports.status${order.status.charAt(0).toUpperCase() + order.status.slice(1)}`) || order.status
                 ]);
@@ -113,10 +113,10 @@ const ReportsTab = ({
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.inventory.date')}</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.users.fullName')}</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.tabs.menu')}</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Cashier</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('cashier.receipt.cashier')}</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.inventory.total')}</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('admin.reports.status')}</th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Timing</th>
+                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">{t('reports.timing')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -125,8 +125,8 @@ const ReportsTab = ({
                     <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900 group-hover:text-blue-600 transition-colors">#{order.orderNumber}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">{order.customerName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.items?.length || 0} items</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{order.cashierName || 'System'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.items?.length || 0} {t('admin.overview.items')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{order.cashierName || t('admin.common.system')}</td>
                     <td className="px-6 py-4 whitespace-nowrap font-black text-gray-900">₪{order.total}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
@@ -148,11 +148,11 @@ const ReportsTab = ({
                         if (order.status === 'completed') {
                           return (
                             <span className={`px-2 py-1 rounded-lg text-[10px] font-bold ${isDelayed ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
-                              {isDelayed ? `Delayed (${Math.round(actual - expected)}m)` : 'On Time'}
+                              {isDelayed ? `${t('reports.delayed')} (${Math.round(actual - expected)}m)` : t('reports.onTime')}
                             </span>
                           );
                         } else {
-                          return isDelayed ? <span className="text-red-500 font-bold animate-pulse text-[10px] uppercase">Delayed</span> : <span className="text-gray-400 text-[10px] uppercase font-bold">In Progress</span>;
+                          return isDelayed ? <span className="text-red-500 font-bold animate-pulse text-[10px] uppercase">{t('reports.delayed')}</span> : <span className="text-gray-400 text-[10px] uppercase font-bold">{t('reports.inProgress')}</span>;
                         }
                       })()}
                     </td>

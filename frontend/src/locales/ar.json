@@ -3,7 +3,7 @@
     "pleaseEnterCreds": "يرجى إدخال البريد الإلكتروني وكلمة المرور",
     "welcome": "أهلاً بك {{name}}!",
     "loginFailed": "فشل تسجيل الدخول",
-    "systemTitle": "نظام بيت الشاورما",
+    "systemTitle": "نظام مطعم الشاورما",
     "signInTitle": "تسجيل الدخول إلى حسابك",
     "emailAddress": "البريد الإلكتروني",
     "emailPlaceholder": "أدخل بريدك الإلكتروني",
@@ -11,8 +11,8 @@
     "passwordPlaceholder": "أدخل كلمة المرور",
     "signingIn": "جاري تسجيل الدخول...",
     "signIn": "تسجيل الدخول",
-    "demoAccounts": "الحسابات التجريبية",
-    "access": "صلاحية الوصول",
+    "demoAccounts": "حسابات تجريبية",
+    "access": "دخول",
     "use": "استخدام"
   },
   "shiftTimer": {
@@ -21,16 +21,16 @@
     "shiftStartsIn": "تبدأ الوردية خلال",
     "shiftEnded": "انتهت الوردية",
     "youAreLate": "أنت متأخر!",
-    "shiftNotStarted": "لم تبدأ الوردية بعد",
+    "shiftNotStarted": "الوردية لم تبدأ بعد",
     "loadingShift": "جاري تحميل الوردية...",
     "noShiftAssigned": "لا توجد وردية محددة",
     "adminAccess": "دخول المدير",
-    "noConstraints": "لا توجد قيود وردية",
+    "noConstraints": "لا توجد قيود على الوردية",
     "loggingOut": "جاري تسجيل الخروج...",
-    "confirmLogout": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
+    "confirmLogout": "هل أنت متأكد من تسجيل الخروج؟",
     "logoutSuccess": "تم تسجيل الخروج بنجاح",
-    "shiftEndsSoon": "ستنتهي الوردية خلال {{minutes}} دقائق",
-    "acknowledge": "حسناً، علم"
+    "shiftEndsSoon": "تنتهي الوردية خلال {{minutes}} دقيقة",
+    "acknowledge": "حسناً، أفهم ذلك"
   },
   "kitchen": {
     "title": "شاشة المطبخ",
@@ -43,7 +43,14 @@
     "loading": "جاري تحميل الطلبات...",
     "fetchFailed": "فشل تحميل الطلبات",
     "statusUpdated": "تم تحديث حالة الطلب إلى {{status}}",
-    "updateFailed": "فشل في تحديث حالة الطلب"
+    "updateFailed": "فشل في تحديث حالة الطلب",
+    "liveOperationalView": "عرض التشغيل المباشر",
+    "orderId": "رقم الطلب",
+    "orderItems": "أصناف الطلب",
+    "startPrep": "بدء التحضير",
+    "ready": "جاهز",
+    "completeOrder": "إتمام الطلب",
+    "noActive": "لا توجد طلبات نشطة حالياً."
   },
   "cashier": {
     "dashboard": "لوحة الكاشير",
@@ -118,7 +125,26 @@
     "egyptian": "🇪🇬 مصري",
     "foreigner": "🌍 أجنبي",
     "clearCartWarning": "⚠️ تغيير نوع العميل يمسح السلة.",
-    "note": "ملاحظة"
+    "note": "ملاحظة",
+    "loadingMenu": "جاري تحميل المنيو...",
+    "noItems": "لا توجد أصناف في هذه الفئة.",
+    "addFirstItem": "اضغط على \"إضافة صنف جديد\" لإضافة أصناف المنيو.",
+    "editItem": "تعديل الصنف",
+    "itemImage": "صورة الصنف",
+    "uploading": "جاري الرفع...",
+    "chooseImage": "اختر صورة",
+    "imageDesc": "موصى به: 300x300 بكسل، بحد أقصى 2 ميجابايت",
+    "itemName": "اسم الصنف",
+    "egyPrice": "السعر المصري (₪) 🇪🇬",
+    "forPrice": "السعر للأجانب (₪) 🌍",
+    "forPriceDesc": "(اتركه فارغاً لاستخدام نفس السعر)",
+    "pricePlaceholder": "مثال: 140",
+    "weightInKg": "الوزن بالكجم (للمخزون)",
+    "category": "الفئة",
+    "includesOptional": "يحتوي على (اختياري)",
+    "itemAvailable": "الصنف متوفر",
+    "update": "تحديث",
+    "add": "إضافة"
   },
   "admin": {
     "dashboard": "لوحة المدير",
@@ -162,7 +188,13 @@
       "supplier": "المورد",
       "history": "سجل المشتريات",
       "price": "السعر",
-      "date": "التاريخ"
+      "date": "التاريخ",
+      "stockMonitoring": "مراقبة مستويات المخزون وإدارة مشتريات المكونات",
+      "noInventoryData": "لا توجد بيانات مخزون",
+      "startAddingPurchases": "ابدأ بإضافة مشتريات المكونات لتتبع مستويات مخزونك في الوقت الفعلي تلقائياً.",
+      "addFirstPurchase": "أضف أول عملية شراء ←",
+      "allSuppliers": "جميع الموردين",
+      "noPurchases": "لم يتم العثور على سجلات شراء"
     },
     "salaries": {
       "title": "إدارة الرواتب",
@@ -180,13 +212,17 @@
       "status": "الحالة",
       "generate": "إنشاء تقرير",
       "download": "تحميل CSV",
-      "all": "كل الحالات"
+      "all": "كل الحالات",
+      "selectDateRange": "يرجى تحديد النطاق الزمني"
     },
     "users": {
       "title": "إدارة المستخدمين",
       "fullName": "الاسم الكامل",
       "email": "البريد الإلكتروني",
       "role": "الصلاحية",
+      "role_admin": "مدير",
+      "role_cashier": "كاشير",
+      "role_chef": "شيف",
       "shift": "الوردية",
       "actions": "إجراءات",
       "addNew": "إضافة مستخدم جديد",
@@ -196,16 +232,21 @@
       "shiftEnd": "نهاية الوردية",
       "creating": "جاري الإنشاء...",
       "createUser": "إنشاء مستخدم",
-      "updateUser": "تحديث مستخدم"
+      "updateUser": "تحديث مستخدم",
+      "deleteSelfError": "لا يمكنك حذف نفسك",
+      "deleted": "تم حذف {{name}}",
+      "updated": "تم تحديث المستخدم",
+      "updateFailed": "فشل التحديث"
     },
     "accounting": {
       "income": "إجمالي الدخل",
-      "expenses": "إجمالي المصروفات",
+      "expenses": "إجمالي المصاريف",
       "profit": "صافي الربح",
-      "addTransaction": "إضافة عملية",
+      "addTransaction": "إضافة معاملة",
       "description": "الوصف",
       "category": "الفئة",
-      "type": "النوع"
+      "type": "النوع",
+      "salaries": "الرواتب"
     },
     "common": {
       "save": "حفظ",
@@ -218,83 +259,57 @@
       "confirmDelete": "هل أنت متأكد من حذف هذا الصنف؟",
       "confirmDeleteUser": "هل أنت متأكد من حذف هذا المستخدم؟",
       "success": "تمت العملية بنجاح",
-      "failed": "فشلت العملية"
-    },
-    "inventory_drilldown": {
-      "title": "سجل تفاصيل الاستهلاك",
-      "subtitle": "سجل تفاصيل تاريخ الاستهلاك",
-      "log": "سجل مفصل",
-      "order": "طلب",
-      "menuItem": "صنف المنيو",
-      "qty": "كمية",
-      "consumed": "مستهلك",
-      "date": "التاريخ",
-      "close": "إغلاق التقرير",
-      "no_records": "لم يتم العثور على سجلات استهلاك لهذا الصنف.",
-      "total_purchased": "إجمالي المشتريات",
-      "total_consumed": "إجمالي المستهلك",
-      "remaining_stock": "المخزون المتبقي"
+      "failed": "فشلت العملية",
+      "system": "النظام",
+      "initialize": "تهيئة الفئات"
     }
   },
   "reports": {
     "delayed": "متأخر",
-    "on_time": "في الوقت المحدد",
+    "onTime": "في الوقت المحدد",
+    "inProgress": "قيد التنفيذ",
     "expected": "المتوقع",
     "actual": "الفعلي",
+    "timing": "التوقيت",
     "timing_analysis": "تحليل التوقيت",
     "order_items": "أصناف الطلب",
-    "no_items": "لا توجد تفاصيل أصناف متوفرة.",
-    "close": "إغلاق"
-  },
-  "kitchen": {
-    "completeOrder": "إتمام الطلب",
-    "markReady": "جاهز",
-    "noActive": "لا توجد طلبات نشطة حالياً."
-  },
-  "menu_edit": {
-    "weight_kg": "الوزن بالكجم (للمخزون)",
-    "no_inventory_link": "-- لا يوجد ربط بالمخزون --",
-    "prep_time": "وقت التحضير (دقائق)",
-    "prep_time_desc": "كم من الوقت يستغرق تحضير هذا الصنف (سيظهر العد التنازلي في المطبخ)",
-    "item_image": "صورة الصنف",
-    "upload_image": "رفع صورة",
-    "includes": "يحتوي على (مثلاً: بطاطس + مشروب)",
-    "available_for_sale": "متوفر للبيع"
-  },
-  "app": {
-    "loading": "جاري التحميل...",
-    "welcome": "أهلاً، {{name}}",
-    "logout": "تسجيل الخروج"
+    "no_items": "لا توجد تفاصيل للأصناف.",
+    "close": "إغلاق",
+    "statusPending": "معلق",
+    "statusPreparing": "تحت التحضير",
+    "statusReady": "جاهز",
+    "statusCompleted": "مكتمل"
   },
   "options": {
     "title": "خيارات",
     "management": "إدارة الخيارات",
     "addOption": "إضافة خيار",
     "editOption": "تعديل الخيار",
-    "noOptions": "لا توجد خيارات بعد. اضغط \"إضافة خيار\" لإنشاء واحد.",
+    "noOptions": "لا توجد خيارات بعد. اضغط على \"إضافة خيار\" للإنشاء.",
     "name": "الاسم",
-    "namePlaceholder": "مثلاً: بدون بصل",
-    "price": "السعر (غالباً 0)",
-    "pricePlaceholder": "مثلاً: 0",
+    "namePlaceholder": "مثال: بدون بصل",
+    "price": "السعر (عادة 0)",
+    "pricePlaceholder": "مثال: 0",
     "icon": "أيقونة (إيموجي)",
-    "iconPlaceholder": "مثلاً: 🧅",
+    "iconPlaceholder": "مثال: 🧅",
     "cancel": "إلغاء",
     "update": "تحديث",
     "add": "إضافة خيار",
-    "deleteConfirm": "هل تريد حذف \"{{name}}\"؟",
+    "deleteConfirm": "حذف \"{{name}}\"؟",
     "deleted": "تم حذف الخيار",
     "deleteFailed": "فشل حذف الخيار",
     "saved": "تم حفظ الخيار",
     "saveFailed": "فشل حفظ الخيار",
     "updated": "تم تحديث الخيار",
-    "added": "تم إضافة الخيار"
+    "added": "تم إضافة الخيار",
+    "subtitle": "التخصيصات والمعدلات"
   },
   "units": {
     "kg": "كجم",
     "bottle": "زجاجة",
     "piece": "قطعة",
     "liter": "لتر",
-    "pack": "ربطة",
+    "pack": "عبوة",
     "box": "صندوق"
   },
   "language": {

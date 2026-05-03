@@ -49,14 +49,27 @@ function CashierDashboard({ user }) {
   // Check if user is admin (has edit permissions)
   const isAdmin = user?.role === 'admin';
 
+  /**
+   * Phase 1 — Image Optimization
+   * Returns the best available image source for a menu item.
+   * Strictly prefers Firebase Storage URLs (https://). Base64 strings
+   * are intentionally NOT rendered — they bloat Firestore reads.
+   * Falls back to null so the placeholder emoji is shown instead.
+   */
+  const getImageSrc = (item) => {
+    if (item.imageUrl?.startsWith('https://')) return item.imageUrl;
+    if (item.image?.startsWith('https://')) return item.image;
+    return null;
+  };
+
   // Tab configuration
   // Tab configuration derived from categories
   const tabs = useMemo(() => categories.map(cat => ({
     id: cat.id,
-    name: cat.name,
+    name: t(`cashier.categories.${cat.id}`, { defaultValue: cat.name }),
     icon: cat.icon === 'Sandwich' ? Sandwich : (cat.icon === 'Salad' ? Salad : (cat.icon === 'Beef' ? Beef : (cat.icon === 'Coffee' ? Coffee : (cat.icon === 'Droplet' ? Droplet : Beef)))),
     color: cat.color || 'bg-red-500'
-  })), [categories]);
+  })), [categories, t]);
 
   // Available extras - loaded live from Firestore
   // (state declared above)
@@ -126,7 +139,7 @@ function CashierDashboard({ user }) {
 
   const addToCart = useCallback((item) => {
     if (!item.available) {
-      toast.error(`${item.name} is currently unavailable`);
+      toast.error(t('cashier.unavailable', { name: item.name }));
       return;
     }
 
@@ -146,26 +159,25 @@ function CashierDashboard({ user }) {
         customizations: {}
       };
       setCart(prev => [...prev, cartItem]);
-      toast.success(`${item.name} added to cart`);
+      toast.success(t('cashier.addedToCart', { name: item.name }));
     }
   }, [customerType]);
 
   const addCustomizedToCart = () => {
     if (!selectedItem) return;
 
-    const extrasTotal = customizations.extras.reduce((sum, extra) => sum + extra.price, 0);
-    const itemTotal = (selectedItem.basePrice + extrasTotal) * customizations.quantity;
+    const optionsTotal = (customizations.options || []).reduce((sum, opt) => sum + (parseFloat(opt.price) || 0), 0);
+    const itemTotal = (selectedItem.basePrice + optionsTotal) * customizations.quantity;
 
     const cartItem = {
       ...selectedItem,
       price: selectedItem.basePrice,
       quantity: customizations.quantity,
-      extras: customizations.extras,
-      options: customizations.options,
+      options: customizations.options || [],
       notes: customizations.notes,
       totalPrice: itemTotal,
       basePrice: selectedItem.basePrice,
-      extrasTotal: extrasTotal
+      optionsTotal: optionsTotal
     };
 
     setCart([...cart, cartItem]);
@@ -184,8 +196,8 @@ function CashierDashboard({ user }) {
 
   const removeFromCart = useCallback((itemId) => {
     setCart(prev => prev.filter(item => item.id !== itemId));
-    toast.success('Item removed from cart');
-  }, []);
+    toast.success(t('cashier.removedFromCart'));
+  }, [t]);
 
 
 
@@ -220,7 +232,7 @@ function CashierDashboard({ user }) {
 
   const handleSubmitOrder = useCallback(async () => {
     if (cart.length === 0) {
-      toast.error('Cart is empty');
+      toast.error(t('cashier.cartEmpty'));
       return;
     }
 
@@ -240,8 +252,8 @@ function CashierDashboard({ user }) {
       totals,
       orderType,
       paymentMethod,
-      cashierName: user?.name || 'Cashier',
-      customerName: customerName || 'Walk-in Customer',
+      cashierName: user?.name || t('cashier.receipt.cashier'),
+      customerName: customerName || t('admin.overview.walkIn'),
       customerType,
       status: 'pending',
       orderNumber,
@@ -251,21 +263,25 @@ function CashierDashboard({ user }) {
     };
 
     try {
-      await addDoc(collection(db, 'orders'), newOrder);
-
-      await addDoc(collection(db, 'transactions'), {
-        type: 'income',
-        amount: totals.total,
-        description: `Order #${orderNumber}`,
-        category: 'sales',
-        createdAt: new Date().toISOString()
+      // Phase 1: Optimistic UI updates. 
+      // We don't 'await' these writes because we want the POS to stay fast even when offline.
+      // Firestore will queue these locally and sync them automatically when the connection returns.
+      addDoc(collection(db, 'orders'), newOrder).catch(err => {
+        console.error("Offline order sync error:", err);
+        toast.error(t('cashier.failedToCreate'));
       });
 
+      addDoc(collection(db, 'transactions'), {
+        type: 'income',
+        amount: totals.total,
+        description: `${t('cashier.receipt.orderNumber')}${orderNumber}`,
+        category: 'sales',
+        createdAt: new Date().toISOString()
+      }).catch(err => console.error("Offline transaction sync error:", err));
+
+      // Success UI proceeds immediately
       toast.success(t('cashier.orderCreated', { number: orderNumber }));
-
-      // ✅ This now works - no popup, uses window.print() instead
       printReceipt(newOrder);
-
       setCart([]);
       setCustomerName('');
       setAmountReceived('');
@@ -316,22 +332,22 @@ function CashierDashboard({ user }) {
       setEditingItem(null);
       setImagePreview(null);
     } catch (error) {
-      toast.error('Operation failed');
+      toast.error(t('admin.common.failed'));
       console.error(error);
     }
   };
 
   const handleDeleteItem = async (category, itemId, imagePath) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
+    if (window.confirm(t('admin.common.confirmDelete'))) {
       if (imagePath) {
         await deleteImage(imagePath);
       }
 
       try {
         await deleteMenuItem(itemId);
-        toast.success('Item deleted successfully!');
+        toast.success(t('admin.common.success'));
       } catch (error) {
-        toast.error('Delete failed');
+        toast.error(t('admin.common.failed'));
       }
     }
   };
@@ -341,7 +357,7 @@ function CashierDashboard({ user }) {
       <div className="flex justify-center items-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <div className="text-xl">Loading menu...</div>
+          <div className="text-xl">{t('cashier.loadingMenu')}</div>
         </div>
       </div>
     );
@@ -405,18 +421,13 @@ function CashierDashboard({ user }) {
                   <div key={item.id} className="border rounded-lg p-4 hover:shadow-lg transition">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        {/* Image Display */}
-                        {item.imageUrl ? (
+                        {/* Image Display — Phase 1: Storage URLs only */}
+                        {getImageSrc(item) ? (
                           <img
-                            src={item.imageUrl}
+                            src={getImageSrc(item)}
                             alt={item.name}
                             className="w-full h-32 object-cover rounded-lg mb-3"
-                          />
-                        ) : item.image && (item.image.startsWith('data:image') || item.image.startsWith('http')) ? (
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-full h-32 object-cover rounded-lg mb-3"
+                            loading="lazy"
                           />
                         ) : (
                           <div className="w-full h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
@@ -495,22 +506,17 @@ function CashierDashboard({ user }) {
                       className="border rounded-lg p-4 hover:shadow-lg transition-all cursor-pointer"
                       onClick={() => addToCart(item)}
                     >
-                      {/* Image Display */}
-                      {item.imageUrl ? (
+                      {/* Image Display — Phase 1: Storage URLs only */}
+                      {getImageSrc(item) ? (
                         <img
-                          src={item.imageUrl}
+                          src={getImageSrc(item)}
                           alt={item.name}
                           className="w-full h-32 object-cover rounded-lg mb-3"
-                        />
-                      ) : item.image && (item.image.startsWith('data:image') || item.image.startsWith('http')) ? (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-32 object-cover rounded-lg mb-3"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-                          <span className="text-4xl">{item.image || '🍽️'}</span>
+                          <span className="text-4xl">{item.image?.startsWith('http') || item.image?.startsWith('data:') ? '🍽️' : (item.image || '🍽️')}</span>
                         </div>
                       )}
 
@@ -546,8 +552,8 @@ function CashierDashboard({ user }) {
                   ))
               ) : (
                 <div className="col-span-3 text-center py-8 text-gray-500">
-                  No items available in this category.
-                  {isAdmin && ' Click "Add New Item" to add menu items.'}
+                  {t('cashier.noItems')}
+                  {isAdmin && ` ${t('cashier.addFirstItem')}`}
                 </div>
               )}
             </div>
@@ -793,7 +799,9 @@ function CashierDashboard({ user }) {
             <div className="bg-orange-50 p-4 rounded-lg mb-4">
               <div className="flex justify-between mb-2 font-bold text-lg">
                 <span>{t('cashier.totalFor')} {customizations.quantity}:</span>
-                <span className="text-green-600">₪{selectedItem.basePrice * customizations.quantity}</span>
+                <span className="text-green-600">
+                  ₪{((selectedItem.basePrice + (customizations.options || []).reduce((sum, opt) => sum + (parseFloat(opt.price) || 0), 0)) * customizations.quantity).toFixed(2)}
+                </span>
               </div>
             </div>
 
@@ -820,7 +828,7 @@ function CashierDashboard({ user }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">{editingItem ? 'Edit Item' : 'Add New Item'}</h2>
+              <h2 className="text-2xl font-bold">{editingItem ? t('cashier.editItem') : t('cashier.addNewItem')}</h2>
               <button onClick={() => {
                 setShowMenuModal(false);
                 setEditingItem(null);
@@ -854,7 +862,7 @@ function CashierDashboard({ user }) {
             }}>
               {/* Image Upload */}
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Item Image</label>
+                <label className="block font-semibold mb-2">{t('cashier.itemImage')}</label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                   {(imagePreview || editingItem?.imageUrl || editingItem?.image) && (
                     <div className="mb-3">
@@ -867,7 +875,7 @@ function CashierDashboard({ user }) {
                   )}
                   <label className="cursor-pointer inline-flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200">
                     <Upload size={18} />
-                    <span>{uploading ? 'Uploading...' : 'Choose Image'}</span>
+                    <span>{uploading ? t('cashier.uploading') : t('cashier.chooseImage')}</span>
                     <input
                       type="file"
                       name="imageFile"
@@ -886,12 +894,12 @@ function CashierDashboard({ user }) {
                       disabled={uploading}
                     />
                   </label>
-                  <p className="text-xs text-gray-500 mt-2">Recommended: 300x300px, Max 2MB</p>
+                  <p className="text-xs text-gray-500 mt-2">{t('cashier.imageDesc')}</p>
                 </div>
               </div>
 
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Item Name</label>
+                <label className="block font-semibold mb-2">{t('cashier.itemName')}</label>
                 <input
                   type="text"
                   name="name"
@@ -902,7 +910,7 @@ function CashierDashboard({ user }) {
               </div>
 
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Egyptian Price (₪) 🇪🇬</label>
+                <label className="block font-semibold mb-2">{t('cashier.egyPrice')}</label>
                 <input
                   type="number"
                   name="price"
@@ -910,24 +918,24 @@ function CashierDashboard({ user }) {
                   step="0.01"
                   defaultValue={editingItem?.price || ''}
                   className="w-full border rounded-lg px-3 py-2"
-                  placeholder="e.g., 140"
+                  placeholder={t('cashier.pricePlaceholder')}
                 />
               </div>
 
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Foreigner Price (₪) 🌍 <span className="text-xs font-normal text-gray-400">(leave blank to use same price)</span></label>
+                <label className="block font-semibold mb-2">{t('cashier.forPrice')} <span className="text-xs font-normal text-gray-400">{t('cashier.forPriceDesc')}</span></label>
                 <input
                   type="number"
                   name="foreignerPrice"
                   step="0.01"
                   defaultValue={editingItem?.foreignerPrice || ''}
                   className="w-full border rounded-lg px-3 py-2"
-                  placeholder="e.g., 250"
+                  placeholder={t('cashier.pricePlaceholder')}
                 />
               </div>
 
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Weight</label>
+                <label className="block font-semibold mb-2">{t('cashier.weight')}</label>
                 <input
                   type="text"
                   name="weight"
@@ -939,7 +947,7 @@ function CashierDashboard({ user }) {
               </div>
 
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Weight in kg (for inventory)</label>
+                <label className="block font-semibold mb-2">{t('cashier.weightInKg')}</label>
                 <input
                   type="number"
                   name="weightInKg"
@@ -951,10 +959,10 @@ function CashierDashboard({ user }) {
               </div>
 
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Category</label>
+                <label className="block font-semibold mb-2">{t('cashier.category')}</label>
                 <select
                   name="category"
-                  defaultValue={editingItem?.category || tabs[0].id}
+                  defaultValue={editingItem?.category || tabs[0]?.id}
                   className="w-full border rounded-lg px-3 py-2"
                 >
                   {tabs.map(tab => (
@@ -964,13 +972,13 @@ function CashierDashboard({ user }) {
               </div>
 
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Includes (Optional)</label>
+                <label className="block font-semibold mb-2">{t('cashier.includesOptional')}</label>
                 <input
                   type="text"
                   name="includes"
                   defaultValue={editingItem?.includes || ''}
                   className="w-full border rounded-lg px-3 py-2"
-                  placeholder="e.g., Fries + Drink"
+                  placeholder={t('menu_edit.includes')}
                 />
               </div>
 
@@ -982,7 +990,7 @@ function CashierDashboard({ user }) {
                     defaultChecked={editingItem?.available !== false}
                     className="w-4 h-4"
                   />
-                  <span className="font-semibold">Item Available</span>
+                  <span className="font-semibold">{t('cashier.itemAvailable')}</span>
                 </label>
               </div>
 
@@ -996,14 +1004,14 @@ function CashierDashboard({ user }) {
                   }}
                   className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
                 >
-                  Cancel
+                  {t('cashier.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={uploading}
                   className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
                 >
-                  {uploading ? 'Uploading...' : (editingItem ? 'Update' : 'Add')}
+                  {uploading ? t('cashier.uploading') : (editingItem ? t('cashier.update') : t('cashier.add'))}
                 </button>
               </div>
             </form>
@@ -1036,7 +1044,7 @@ function CashierDashboard({ user }) {
       </style>
 
       {receiptData && (
-        <div id="receipt-print-area">
+        <div id="receipt-print-area" dir="rtl">
           <div style={{ textAlign: 'center', borderBottom: '1px dashed #000', paddingBottom: '10px', marginBottom: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '10px' }}>
               <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path>
@@ -1044,19 +1052,19 @@ function CashierDashboard({ user }) {
               <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>
             </svg>
             <h2 style={{ margin: '5px 0' }}>Betshawerma</h2>
-            <p style={{ fontSize: '12px', margin: '2px 0' }}>{t('cashier.receipt.hotline')}: 19300</p>
-            <p style={{ fontSize: '12px', margin: '2px 0' }}>{t('cashier.receipt.commercialReg')}: 55689</p>
-            <p style={{ fontSize: '12px', margin: '2px 0' }}>{t('cashier.receipt.taxCard')}: 5-967-522</p>
+            <p style={{ fontSize: '12px', margin: '2px 0' }}>{t('cashier.receipt.hotline', { lng: 'ar' })}: 19300</p>
+            <p style={{ fontSize: '12px', margin: '2px 0' }}>{t('cashier.receipt.commercialReg', { lng: 'ar' })}: 55689</p>
+            <p style={{ fontSize: '12px', margin: '2px 0' }}>{t('cashier.receipt.taxCard', { lng: 'ar' })}: 5-967-522</p>
             <p style={{ fontSize: '12px', margin: '5px 0 2px' }}>
-              {new Date(receiptData.createdAt).toLocaleString()}
+              {new Date(receiptData.createdAt).toLocaleString('ar-EG')}
             </p>
           </div>
 
           <div style={{ textAlign: 'right', marginBottom: '10px', fontSize: '12px' }}>
-            <div><strong>{t('cashier.receipt.cashier')}:</strong> {receiptData.cashierName}</div>
-            <div><strong>{t('cashier.receipt.orderNumber')}:</strong> #{receiptData.orderNumber}</div>
-            <div><strong>{t('cashier.orderType')}:</strong> {receiptData.orderType === 'dinein' ? t('cashier.dineIn') : t('cashier.takeaway')}</div>
-            <div><strong>{t('cashier.paymentMethod')}:</strong> {receiptData.paymentMethod === 'cash' ? t('cashier.cash') : t('cashier.visa')}</div>
+            <div><strong>{t('cashier.receipt.cashier', { lng: 'ar' })}:</strong> {receiptData.cashierName}</div>
+            <div><strong>{t('cashier.receipt.orderNumber', { lng: 'ar' })}:</strong> #{receiptData.orderNumber}</div>
+            <div><strong>{t('cashier.orderType', { lng: 'ar' })}:</strong> {receiptData.orderType === 'dinein' ? t('cashier.dineIn', { lng: 'ar' }) : t('cashier.takeaway', { lng: 'ar' })}</div>
+            <div><strong>{t('cashier.paymentMethod', { lng: 'ar' })}:</strong> {receiptData.paymentMethod === 'cash' ? t('cashier.cash', { lng: 'ar' }) : t('cashier.visa', { lng: 'ar' })}</div>
           </div>
 
           <div style={{ borderBottom: '1px dashed #000', marginBottom: '10px' }} />
@@ -1068,38 +1076,49 @@ function CashierDashboard({ user }) {
                   <span>{item.quantity}x {item.name}</span>
                   <span>₪{(item.price * item.quantity).toFixed(2)}</span>
                 </div>
-
+                {item.options && item.options.length > 0 && (
+                  <div style={{ fontSize: '11px', color: '#666', marginTop: '2px', paddingRight: '15px' }}>
+                    {item.options.map((opt, oIdx) => (
+                      <div key={oIdx}>+ {opt.name}</div>
+                    ))}
+                  </div>
+                )}
+                {item.notes && (
+                  <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#666', marginTop: '2px', paddingRight: '15px' }}>
+                    * {item.notes}
+                  </div>
+                )}
               </div>
             ))}
           </div>
 
           <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-              <span>{t('cashier.subtotal')}:</span>
+              <span>{t('cashier.subtotal', { lng: 'ar' })}:</span>
               <span>₪{receiptData.totals.subtotal.toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-              <span>{t('cashier.vat')}:</span>
+              <span>{t('cashier.vat', { lng: 'ar' })}:</span>
               <span>₪{receiptData.totals.vat.toFixed(2)}</span>
             </div>
             {receiptData.orderType === 'dinein' && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                <span>{t('cashier.service')}:</span>
+                <span>{t('cashier.service', { lng: 'ar' })}:</span>
                 <span>₪{receiptData.totals.service.toFixed(2)}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '18px', marginTop: '5px', borderBottom: '1px solid #000', paddingBottom: '5px' }}>
-              <span>{t('cashier.total')}:</span>
+              <span>{t('cashier.total', { lng: 'ar' })}:</span>
               <span>₪{receiptData.totals.total.toFixed(2)}</span>
             </div>
             {receiptData.paymentMethod === 'cash' && (
               <div style={{ marginTop: '5px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span>{t('cashier.amountReceived')}:</span>
+                  <span>{t('cashier.amountReceived', { lng: 'ar' })}:</span>
                   <span>₪{receiptData.amountReceived.toFixed(2)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold' }}>
-                  <span>{t('cashier.change')}:</span>
+                  <span>{t('cashier.change', { lng: 'ar' })}:</span>
                   <span>₪{receiptData.change.toFixed(2)}</span>
                 </div>
               </div>
@@ -1107,9 +1126,9 @@ function CashierDashboard({ user }) {
           </div>
 
           <div style={{ marginTop: '20px', fontSize: '12px', textAlign: 'center', borderTop: '1px dashed #000', paddingTop: '10px' }}>
-            <p style={{ fontWeight: 'bold' }}>{t('cashier.receipt.thanks')}</p>
+            <p style={{ fontWeight: 'bold' }}>{t('cashier.receipt.thanks', { lng: 'ar' })}</p>
             <div style={{ marginTop: '10px' }}>
-              <p style={{ margin: '0 0 5px' }}>{t('cashier.receipt.scanMenu')}</p>
+              <p style={{ margin: '0 0 5px' }}>{t('cashier.receipt.scanMenu', { lng: 'ar' })}</p>
               <img
                 src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https%3A%2F%2Fbetshawerma.com%2Fmenu"
                 alt="Menu QR Code"

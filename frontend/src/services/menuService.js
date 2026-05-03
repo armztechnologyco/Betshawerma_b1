@@ -11,6 +11,8 @@ import {
   orderBy,
   setDoc
 } from 'firebase/firestore';
+import { storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 const MENU_COLLECTION = 'menu';
 const CATEGORIES_COLLECTION = 'menu_categories';
@@ -201,3 +203,43 @@ export const deleteMenuItem = async (itemId) => {
     throw error;
   }
 };
+
+/**
+ * Uploads a file to Firebase Storage and returns the public URL and path.
+ * Used to replace slow Base64 strings.
+ */
+export const uploadImage = async (id, file) => {
+  if (!file) return null;
+  try {
+    const fileExtension = file.name.split('.').pop();
+    const imageRef = ref(storage, `menu/${id}_${Date.now()}.${fileExtension}`);
+    
+    // Set metadata to help with caching
+    const metadata = {
+      cacheControl: 'public,max-age=31536000',
+    };
+
+    await uploadBytes(imageRef, file, metadata);
+    const url = await getDownloadURL(imageRef);
+
+    return { success: true, url, path: imageRef.fullPath };
+  } catch (err) {
+    console.error('Storage Upload Error:', err);
+    return { success: false, error: err.message };
+  }
+};
+
+/**
+ * Deletes an image from Storage to keep the bucket clean.
+ */
+export const deleteImage = async (path) => {
+  if (!path || path === '🍽️') return;
+  try {
+    const imageRef = ref(storage, path);
+    await deleteObject(imageRef);
+    return { success: true };
+  } catch (err) {
+    console.error('Storage Delete Error:', err);
+    return { success: false };
+  }
+};
