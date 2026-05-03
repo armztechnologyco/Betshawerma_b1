@@ -1,5 +1,6 @@
 import { setGlobalOptions } from "firebase-functions";
 import { onDocumentCreated, onDocumentDeleted } from "firebase-functions/v2/firestore";
+import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 
@@ -118,7 +119,7 @@ export const cleanupInventoryOnPurchaseDelete = onDocumentDeleted("purchases/{pu
  * Recalculate full inventory from history (Admin Only)
  * Use this to bootstrap the 'currentStock' values
  */
-export const recalculateInventory = onRequest({ cors: true }, async (req, res) => {
+export const recalculateInventory = onRequest({ cors: true }, async (req: any, res: any) => {
     try {
         logger.info("Starting full inventory recalculation...");
         
