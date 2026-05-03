@@ -594,7 +594,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
         await recordSalary(salaryData.employeeName, parseFloat(salaryData.amount), salaryData.month, salaryData.year);
         toast.success('Salary recorded successfully');
       }
-      
+
       setShowAddSalary(false);
       setEditingSalary(null);
       setSalaryData({ employeeName: '', amount: '', month: selectedMonth, year: selectedYear });
@@ -937,418 +937,418 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
 
 
       <div className="container mx-auto px-4 py-8">
-      {/* OVERVIEW TAB */}
-      {activeTab === 'overview' && (
-        <OverviewTab 
-          stats={stats}
-          setActiveTab={setActiveTab}
-          users={users}
-          kitchenOrders={kitchenOrders}
-          orderTimers={orderTimers}
-          formatTime={formatTime}
-          t={t}
-          onSalesClick={() => setShowTodayItemsModal(true)}
-          onOrdersClick={() => setShowTodayOrdersModal(true)}
-        />
-      )}
+        {/* OVERVIEW TAB */}
+        {activeTab === 'overview' && (
+          <OverviewTab
+            stats={stats}
+            setActiveTab={setActiveTab}
+            users={users}
+            kitchenOrders={kitchenOrders}
+            orderTimers={orderTimers}
+            formatTime={formatTime}
+            t={t}
+            onSalesClick={() => setShowTodayItemsModal(true)}
+            onOrdersClick={() => setShowTodayOrdersModal(true)}
+          />
+        )}
 
-      {/* CASHIER TAB */}
-      {activeTab === 'cashier' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex gap-2 mb-4 overflow-x-auto">
-                {categories.map((cat) => {
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => setCashierActiveTab(cat.id)}
-                      className={`px-4 py-2 rounded-lg flex items-center gap-2 ${cashierActiveTab === cat.id ? (cat.color || 'bg-orange-500') + ' text-white' : 'bg-gray-200'}`}
-                    >
-                      {cat.name}
-                      <span className="ml-1 text-xs">
-                         ({menuItems[cat.id]?.filter(i => i.available).length || 0})
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {menuItems[cashierActiveTab] && menuItems[cashierActiveTab].length > 0 ? (
-                  menuItems[cashierActiveTab]
-                    .filter(item => item.available !== false)
-                    .map(item => (
-                      <div
-                        key={item.id}
-                        className="border rounded-lg p-4 hover:shadow-lg cursor-pointer transition-all"
-                        onClick={() => addToCart(item)}
+        {/* CASHIER TAB */}
+        {activeTab === 'cashier' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="flex gap-2 mb-4 overflow-x-auto">
+                  {categories.map((cat) => {
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setCashierActiveTab(cat.id)}
+                        className={`px-4 py-2 rounded-lg flex items-center gap-2 ${cashierActiveTab === cat.id ? (cat.color || 'bg-orange-500') + ' text-white' : 'bg-gray-200'}`}
                       >
-                        <div className="w-full h-24 mb-2 flex items-center justify-center">
-                          {item.image && (item.image.startsWith('data:image') || item.image.startsWith('http')) ? (
-                            <img src={item.image} alt={item.name} className="h-20 w-20 object-cover rounded-lg" />
-                          ) : (
-                            <span className="text-4xl">{item.image || '🍽️'}</span>
+                        {cat.name}
+                        <span className="ml-1 text-xs">
+                          ({menuItems[cat.id]?.filter(i => i.available).length || 0})
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {menuItems[cashierActiveTab] && menuItems[cashierActiveTab].length > 0 ? (
+                    menuItems[cashierActiveTab]
+                      .filter(item => item.available !== false)
+                      .map(item => (
+                        <div
+                          key={item.id}
+                          className="border rounded-lg p-4 hover:shadow-lg cursor-pointer transition-all"
+                          onClick={() => addToCart(item)}
+                        >
+                          <div className="w-full h-24 mb-2 flex items-center justify-center">
+                            {item.image && (item.image.startsWith('data:image') || item.image.startsWith('http')) ? (
+                              <img src={item.image} alt={item.name} className="h-20 w-20 object-cover rounded-lg" />
+                            ) : (
+                              <span className="text-4xl">{item.image || '🍽️'}</span>
+                            )}
+                          </div>
+                          <h3 className="font-semibold text-lg">{item.name}</h3>
+                          <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                            <Scale size={14} />
+                            <span>{item.weight}</span>
+                          </div>
+                          <p className="text-green-600 font-bold text-lg mt-1">${item.price}</p>
+                          {item.includes && (
+                            <p className="text-xs text-gray-500 mt-1">{item.includes}</p>
                           )}
+                          <button className="mt-3 bg-green-500 text-white px-3 py-1 rounded w-full hover:bg-green-600 transition">
+                            {t('cashier.addToOrder')}
+                          </button>
                         </div>
-                        <h3 className="font-semibold text-lg">{item.name}</h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                          <Scale size={14} />
-                          <span>{item.weight}</span>
+                      ))
+                  ) : (
+                    <div className="col-span-3 text-center py-8 text-gray-500">
+                      {t('cashier.noItems')} {user?.role === 'admin' && t('cashier.addFirstItem')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg shadow-lg p-6 sticky top-20">
+                <h3 className="text-xl font-bold mb-4">{t('cashier.currentOrder')}</h3>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 mb-4"
+                  placeholder={t('cashier.enterCustomerName')}
+                />
+                <div className="border-t border-b py-4 mb-4 max-h-96 overflow-y-auto">
+                  {cart.length === 0 ? (
+                    <p className="text-gray-500 text-center">{t('cashier.cartEmpty')}</p>
+                  ) : (
+                    cart.map(item => (
+                      <div key={item.id} className="flex justify-between items-center mb-3 pb-2 border-b">
+                        <div>
+                          <p className="font-semibold">{item.name}</p>
+                          <p className="text-sm text-gray-600">${item.price} each</p>
                         </div>
-                        <p className="text-green-600 font-bold text-lg mt-1">${item.price}</p>
-                        {item.includes && (
-                          <p className="text-xs text-gray-500 mt-1">{item.includes}</p>
-                        )}
-                        <button className="mt-3 bg-green-500 text-white px-3 py-1 rounded w-full hover:bg-green-600 transition">
-                          {t('cashier.addToOrder')}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => updateQuantity(item.id, -1)}
+                            className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, 1)}
+                            className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+                          >
+                            +
+                          </button>
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            className="text-red-500 ml-2 hover:text-red-700"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                     ))
-                ) : (
-                  <div className="col-span-3 text-center py-8 text-gray-500">
-                    {t('cashier.noItems')} {user?.role === 'admin' && t('cashier.addFirstItem')}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-lg p-6 sticky top-20">
-              <h3 className="text-xl font-bold mb-4">{t('cashier.currentOrder')}</h3>
-              <input
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 mb-4"
-                placeholder={t('cashier.enterCustomerName')}
-              />
-              <div className="border-t border-b py-4 mb-4 max-h-96 overflow-y-auto">
-                {cart.length === 0 ? (
-                  <p className="text-gray-500 text-center">{t('cashier.cartEmpty')}</p>
-                ) : (
-                  cart.map(item => (
-                    <div key={item.id} className="flex justify-between items-center mb-3 pb-2 border-b">
-                      <div>
-                        <p className="font-semibold">{item.name}</p>
-                        <p className="text-sm text-gray-600">${item.price} each</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
-                        >
-                          -
-                        </button>
-                        <span className="w-8 text-center">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
-                        >
-                          +
-                        </button>
-                        <button
-                          onClick={() => removeFromCart(item.id)}
-                          className="text-red-500 ml-2 hover:text-red-700"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="flex justify-between text-xl font-bold mb-4">
-                <span>{t('cashier.total')}:</span>
-                <span>${calculateTotal()}</span>
-              </div>
-              <button
-                onClick={handleOrder}
-                disabled={processing || !cart.length}
-                className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 disabled:bg-gray-400 transition"
-              >
-                {processing ? t('cashier.processing') : t('cashier.completeOrder')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* MENU MANAGEMENT TAB */}
-      {activeTab === 'menu' && (
-        <MenuTab 
-          categories={categories}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-          menuItems={menuItems}
-          availableOptions={availableOptions}
-          handleAddItem={handleAddItem}
-          handleEditItem={handleEditItem}
-          handleDeleteItem={handleDeleteItem}
-          toggleItemAvailability={toggleItemAvailability}
-          setEditingCategory={setEditingCategory}
-          setShowCategoryModal={setShowCategoryModal}
-          setEditingOption={setEditingOption}
-          setShowOptionModal={setShowOptionModal}
-          deleteCategory={deleteCategory}
-          deleteOption={deleteOption}
-          addCategory={addCategory}
-          toast={toast}
-          t={t}
-        />
-      )}
-
-      {/* Add / Edit Category Modal */}
-      {showCategoryModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">{editingCategory ? t('admin.common.edit') : t('cashier.add')}</h2>
-              <button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }} className="text-gray-500 hover:text-gray-700">
-                <X size={22} />
-              </button>
-            </div>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const fd = new FormData(e.target);
-                const data = {
-                  id: fd.get('id'),
-                  name: fd.get('name'),
-                  color: fd.get('color') || 'bg-blue-500',
-                  order: parseInt(fd.get('order')) || 0
-                };
-                try {
-                  if (editingCategory) {
-                    await updateCategory(editingCategory.id, data);
-                    toast.success('Category updated');
-                  } else {
-                    await addCategory(data);
-                    toast.success('Category added');
-                  }
-                  setShowCategoryModal(false);
-                  setEditingCategory(null);
-                } catch {
-                  toast.error('Save failed');
-                }
-              }}
-            >
-              <div className="mb-4">
-                <label className="block font-semibold mb-1 text-sm">Category ID (lowercase, e.g. grilled_chicken)</label>
-                <input name="id" required defaultValue={editingCategory?.id || ''} placeholder="grilled_chicken" readOnly={!!editingCategory}
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:bg-gray-100" />
-              </div>
-              <div className="mb-4">
-                <label className="block font-semibold mb-1 text-sm">Display Name</label>
-                <input name="name" required defaultValue={editingCategory?.name || ''} placeholder="Grilled Chicken"
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" />
-              </div>
-              <div className="mb-4">
-                <label className="block font-semibold mb-1 text-sm">Color (Tailwind class, e.g. bg-orange-500)</label>
-                <input name="color" defaultValue={editingCategory?.color || 'bg-blue-500'} placeholder="bg-orange-500"
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" />
-              </div>
-              <div className="mb-6">
-                <label className="block font-semibold mb-1 text-sm">Display Order</label>
-                <input name="order" type="number" defaultValue={editingCategory?.order || 0}
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" />
-              </div>
-              <div className="flex gap-3">
-                <button type="button" onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }}
-                  className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
-                <button type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold">
-                  {editingCategory ? 'Update' : 'Add'}
-                </button>
-              </div>
-              {editingCategory && (
-                <button 
-                  type="button" 
-                  onClick={async () => {
-                    if (window.confirm('Delete category? Items in this category will become uncategorized.')) {
-                      await deleteCategory(editingCategory.id);
-                      setShowCategoryModal(false);
-                      setEditingCategory(null);
-                    }
-                  }}
-                  className="w-full mt-4 text-red-500 text-sm hover:underline"
+                  )}
+                </div>
+                <div className="flex justify-between text-xl font-bold mb-4">
+                  <span>{t('cashier.total')}:</span>
+                  <span>${calculateTotal()}</span>
+                </div>
+                <button
+                  onClick={handleOrder}
+                  disabled={processing || !cart.length}
+                  className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 disabled:bg-gray-400 transition"
                 >
-                  Delete Category
+                  {processing ? t('cashier.processing') : t('cashier.completeOrder')}
                 </button>
-              )}
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Add / Edit Option Modal */}
-      {showOptionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">{editingOption ? t('options.editOption') : t('options.addOption')}</h2>
-              <button onClick={() => { setShowOptionModal(false); setEditingOption(null); }} className="text-gray-500 hover:text-gray-700">
-                <X size={22} />
-              </button>
+              </div>
             </div>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const fd = new FormData(e.target);
-                const data = {
-                  name: fd.get('name'),
-                  icon: fd.get('icon') || '🛠️',
-                };
-                try {
-                  if (editingOption) {
-                    await updateOption(editingOption.id, data);
-                    toast.success(t('options.updated'));
-                  } else {
-                    await addOption(data);
-                    toast.success(t('options.added'));
-                  }
-                  setShowOptionModal(false);
-                  setEditingOption(null);
-                } catch {
-                  toast.error('Save failed');
-                }
-              }}
-            >
-              <div className="mb-4">
-                <label className="block font-semibold mb-1 text-sm">{t('options.name')}</label>
-                <input name="name" required defaultValue={editingOption?.name || ''} placeholder={t('options.namePlaceholder')}
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-              </div>
-              <div className="mb-6">
-                <label className="block font-semibold mb-1 text-sm">{t('options.icon')}</label>
-                <input name="icon" defaultValue={editingOption?.icon || '🛠️'} placeholder="🛠️"
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-              </div>
-              <div className="flex gap-3">
-                <button type="button" onClick={() => { setShowOptionModal(false); setEditingOption(null); }}
-                  className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50">{t('options.cancel')}</button>
-                <button type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold">
-                  {editingOption ? t('options.update') : t('options.add')}
+          </div>
+        )}
+
+        {/* MENU MANAGEMENT TAB */}
+        {activeTab === 'menu' && (
+          <MenuTab
+            categories={categories}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            menuItems={menuItems}
+            availableOptions={availableOptions}
+            handleAddItem={handleAddItem}
+            handleEditItem={handleEditItem}
+            handleDeleteItem={handleDeleteItem}
+            toggleItemAvailability={toggleItemAvailability}
+            setEditingCategory={setEditingCategory}
+            setShowCategoryModal={setShowCategoryModal}
+            setEditingOption={setEditingOption}
+            setShowOptionModal={setShowOptionModal}
+            deleteCategory={deleteCategory}
+            deleteOption={deleteOption}
+            addCategory={addCategory}
+            toast={toast}
+            t={t}
+          />
+        )}
+
+        {/* Add / Edit Category Modal */}
+        {showCategoryModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">{editingCategory ? t('admin.common.edit') : t('cashier.add')}</h2>
+                <button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }} className="text-gray-500 hover:text-gray-700">
+                  <X size={22} />
                 </button>
               </div>
-            </form>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.target);
+                  const data = {
+                    id: fd.get('id'),
+                    name: fd.get('name'),
+                    color: fd.get('color') || 'bg-blue-500',
+                    order: parseInt(fd.get('order')) || 0
+                  };
+                  try {
+                    if (editingCategory) {
+                      await updateCategory(editingCategory.id, data);
+                      toast.success('Category updated');
+                    } else {
+                      await addCategory(data);
+                      toast.success('Category added');
+                    }
+                    setShowCategoryModal(false);
+                    setEditingCategory(null);
+                  } catch {
+                    toast.error('Save failed');
+                  }
+                }}
+              >
+                <div className="mb-4">
+                  <label className="block font-semibold mb-1 text-sm">Category ID (lowercase, e.g. grilled_chicken)</label>
+                  <input name="id" required defaultValue={editingCategory?.id || ''} placeholder="grilled_chicken" readOnly={!!editingCategory}
+                    className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:bg-gray-100" />
+                </div>
+                <div className="mb-4">
+                  <label className="block font-semibold mb-1 text-sm">Display Name</label>
+                  <input name="name" required defaultValue={editingCategory?.name || ''} placeholder="Grilled Chicken"
+                    className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                </div>
+                <div className="mb-4">
+                  <label className="block font-semibold mb-1 text-sm">Color (Tailwind class, e.g. bg-orange-500)</label>
+                  <input name="color" defaultValue={editingCategory?.color || 'bg-blue-500'} placeholder="bg-orange-500"
+                    className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                </div>
+                <div className="mb-6">
+                  <label className="block font-semibold mb-1 text-sm">Display Order</label>
+                  <input name="order" type="number" defaultValue={editingCategory?.order || 0}
+                    className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                </div>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }}
+                    className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+                  <button type="submit"
+                    className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold">
+                    {editingCategory ? 'Update' : 'Add'}
+                  </button>
+                </div>
+                {editingCategory && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (window.confirm('Delete category? Items in this category will become uncategorized.')) {
+                        await deleteCategory(editingCategory.id);
+                        setShowCategoryModal(false);
+                        setEditingCategory(null);
+                      }
+                    }}
+                    className="w-full mt-4 text-red-500 text-sm hover:underline"
+                  >
+                    Delete Category
+                  </button>
+                )}
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Add / Edit Option Modal */}
+        {showOptionModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">{editingOption ? t('options.editOption') : t('options.addOption')}</h2>
+                <button onClick={() => { setShowOptionModal(false); setEditingOption(null); }} className="text-gray-500 hover:text-gray-700">
+                  <X size={22} />
+                </button>
+              </div>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.target);
+                  const data = {
+                    name: fd.get('name'),
+                    icon: fd.get('icon') || '🛠️',
+                  };
+                  try {
+                    if (editingOption) {
+                      await updateOption(editingOption.id, data);
+                      toast.success(t('options.updated'));
+                    } else {
+                      await addOption(data);
+                      toast.success(t('options.added'));
+                    }
+                    setShowOptionModal(false);
+                    setEditingOption(null);
+                  } catch {
+                    toast.error('Save failed');
+                  }
+                }}
+              >
+                <div className="mb-4">
+                  <label className="block font-semibold mb-1 text-sm">{t('options.name')}</label>
+                  <input name="name" required defaultValue={editingOption?.name || ''} placeholder={t('options.namePlaceholder')}
+                    className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                </div>
+                <div className="mb-6">
+                  <label className="block font-semibold mb-1 text-sm">{t('options.icon')}</label>
+                  <input name="icon" defaultValue={editingOption?.icon || '🛠️'} placeholder="🛠️"
+                    className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                </div>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => { setShowOptionModal(false); setEditingOption(null); }}
+                    className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50">{t('options.cancel')}</button>
+                  <button type="submit"
+                    className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold">
+                    {editingOption ? t('options.update') : t('options.add')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
 
 
-      {/* KITCHEN TAB */}
-      {activeTab === 'kitchen' && (
-        <KitchenTab 
-          kitchenOrders={kitchenOrders}
-          orderTimers={orderTimers}
-          startPreparation={startPreparation}
-          updateOrderStatus={updateOrderStatus}
-          formatTime={formatTime}
-          getProgressPercentage={getProgressPercentage}
-          t={t}
-        />
-      )}
+        {/* KITCHEN TAB */}
+        {activeTab === 'kitchen' && (
+          <KitchenTab
+            kitchenOrders={kitchenOrders}
+            orderTimers={orderTimers}
+            startPreparation={startPreparation}
+            updateOrderStatus={updateOrderStatus}
+            formatTime={formatTime}
+            getProgressPercentage={getProgressPercentage}
+            t={t}
+          />
+        )}
 
 
-      {/* INVENTORY / PURCHASES TAB */}
-      {activeTab === 'purchases' && (
-        <InventoryTab 
-          inventoryData={inventoryData}
-          setSelectedInventoryItem={setSelectedInventoryItem}
-          setShowAddPurchase={setShowAddPurchase}
-          purchases={purchases}
-          showPurchaseFilter={showPurchaseFilter}
-          setShowPurchaseFilter={setShowPurchaseFilter}
-          purchaseSearch={purchaseSearch}
-          setPurchaseSearch={setPurchaseSearch}
-          handleEditPurchase={handleEditPurchase}
-          handleDeletePurchase={handleDeletePurchase}
-          selectedInventoryItem={selectedInventoryItem}
-          handleExportCSV={handleExportCSV}
-          t={t}
-        />
-      )}
+        {/* INVENTORY / PURCHASES TAB */}
+        {activeTab === 'purchases' && (
+          <InventoryTab
+            inventoryData={inventoryData}
+            setSelectedInventoryItem={setSelectedInventoryItem}
+            setShowAddPurchase={setShowAddPurchase}
+            purchases={purchases}
+            showPurchaseFilter={showPurchaseFilter}
+            setShowPurchaseFilter={setShowPurchaseFilter}
+            purchaseSearch={purchaseSearch}
+            setPurchaseSearch={setPurchaseSearch}
+            handleEditPurchase={handleEditPurchase}
+            handleDeletePurchase={handleDeletePurchase}
+            selectedInventoryItem={selectedInventoryItem}
+            handleExportCSV={handleExportCSV}
+            t={t}
+          />
+        )}
 
 
-      {/* SALARIES TAB */}
-      {activeTab === 'salaries' && (
-        <SalariesTab 
-          salaries={salaries}
-          salaryFilter={salaryFilter}
-          setSalaryFilter={setSalaryFilter}
-          months={months}
-          years={years}
-          clearSalaryFilters={() => setSalaryFilter({ employeeName: '', month: 'all', year: 'all' })}
-          setShowAddSalary={setShowAddSalary}
-          handleExportCSV={handleExportCSV}
-          users={users}
-          handleEditSalary={handleEditSalary}
-          handleDeleteSalary={handleDeleteSalary}
-          t={t}
-        />
-      )}
+        {/* SALARIES TAB */}
+        {activeTab === 'salaries' && (
+          <SalariesTab
+            salaries={salaries}
+            salaryFilter={salaryFilter}
+            setSalaryFilter={setSalaryFilter}
+            months={months}
+            years={years}
+            clearSalaryFilters={() => setSalaryFilter({ employeeName: '', month: 'all', year: 'all' })}
+            setShowAddSalary={setShowAddSalary}
+            handleExportCSV={handleExportCSV}
+            users={users}
+            handleEditSalary={handleEditSalary}
+            handleDeleteSalary={handleDeleteSalary}
+            t={t}
+          />
+        )}
 
-      {/* REPORTS TAB */}
-      {activeTab === 'reports' && (
-        <ReportsTab 
-          reportFilter={reportFilter}
-          setReportFilter={setReportFilter}
-          generateReport={generateReport}
-          showReport={showReport}
-          reportData={reportData}
-          handleExportCSV={handleExportCSV}
-          setSelectedReportOrder={setSelectedReportOrder}
-          users={users}
-          t={t}
-        />
-      )}
+        {/* REPORTS TAB */}
+        {activeTab === 'reports' && (
+          <ReportsTab
+            reportFilter={reportFilter}
+            setReportFilter={setReportFilter}
+            generateReport={generateReport}
+            showReport={showReport}
+            reportData={reportData}
+            handleExportCSV={handleExportCSV}
+            setSelectedReportOrder={setSelectedReportOrder}
+            users={users}
+            t={t}
+          />
+        )}
 
-      {/* ACCOUNTING TAB */}
-      {activeTab === 'accounting' && (
-        <AccountingTab 
-          summary={summary}
-          selectedMonth={selectedMonth}
-          setSelectedMonth={setSelectedMonth}
-          selectedYear={selectedYear}
-          setSelectedYear={setSelectedYear}
-          months={months}
-          years={years}
-          transactions={transactions}
-          setShowAddTransaction={setShowAddTransaction}
-          t={t}
-          onOrderClick={async (description) => {
-            const orderNum = description.split('#')[1]?.trim();
-            if (orderNum) {
-              try {
-                const allOrders = await getAllOrders();
-                const order = allOrders.find(o => o.orderNumber === orderNum);
-                if (order) {
-                  setSelectedReportOrder(order);
-                } else {
-                  toast.error('Order details not found');
+        {/* ACCOUNTING TAB */}
+        {activeTab === 'accounting' && (
+          <AccountingTab
+            summary={summary}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            selectedYear={selectedYear}
+            setSelectedYear={setSelectedYear}
+            months={months}
+            years={years}
+            transactions={transactions}
+            setShowAddTransaction={setShowAddTransaction}
+            t={t}
+            onOrderClick={async (description) => {
+              const orderNum = description.split('#')[1]?.trim();
+              if (orderNum) {
+                try {
+                  const allOrders = await getAllOrders();
+                  const order = allOrders.find(o => o.orderNumber === orderNum);
+                  if (order) {
+                    setSelectedReportOrder(order);
+                  } else {
+                    toast.error('Order details not found');
+                  }
+                } catch (err) {
+                  toast.error('Failed to load order');
                 }
-              } catch (err) {
-                toast.error('Failed to load order');
               }
-            }
-          }}
-        />
-      )}
+            }}
+          />
+        )}
 
-      {/* USERS MANAGEMENT TAB */}
-      {activeTab === 'users' && (
-        <UsersTab 
-          users={users}
-          setShowRegisterModal={setShowAddUser}
-          handleEditUser={handleEditUserClick}
-          handleDeleteUser={handleDeleteUser}
-          t={t}
-        />
-      )}
+        {/* USERS MANAGEMENT TAB */}
+        {activeTab === 'users' && (
+          <UsersTab
+            users={users}
+            setShowRegisterModal={setShowAddUser}
+            handleEditUser={handleEditUserClick}
+            handleDeleteUser={handleDeleteUser}
+            t={t}
+          />
+        )}
       </div>
 
       {/* Modals */}
@@ -1366,29 +1366,29 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">{t('admin.inventory.itemName')}</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Chicken Meat, Water Bottles" 
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all" 
-                  value={purchaseForm.itemName} 
-                  onChange={e => setPurchaseForm({ ...purchaseForm, itemName: e.target.value })} 
+                <input
+                  type="text"
+                  placeholder="e.g. Chicken Meat, Water Bottles"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                  value={purchaseForm.itemName}
+                  onChange={e => setPurchaseForm({ ...purchaseForm, itemName: e.target.value })}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">{t('admin.inventory.quantity')}</label>
-                  <input 
-                    type="number" 
-                    placeholder="0.00" 
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all" 
-                    value={purchaseForm.quantity} 
-                    onChange={e => setPurchaseForm({ ...purchaseForm, quantity: e.target.value })} 
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                    value={purchaseForm.quantity}
+                    onChange={e => setPurchaseForm({ ...purchaseForm, quantity: e.target.value })}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">{t('admin.inventory.unit')}</label>
-                  <select 
+                  <select
                     className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all bg-white"
                     value={purchaseForm.unit}
                     onChange={e => setPurchaseForm({ ...purchaseForm, unit: e.target.value })}
@@ -1406,22 +1406,22 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">{t('admin.inventory.price')} ($)</label>
-                  <input 
-                    type="number" 
-                    placeholder="0.00" 
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all" 
-                    value={purchaseForm.price} 
-                    onChange={e => setPurchaseForm({ ...purchaseForm, price: e.target.value })} 
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                    value={purchaseForm.price}
+                    onChange={e => setPurchaseForm({ ...purchaseForm, price: e.target.value })}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">{t('admin.inventory.supplier')}</label>
-                  <input 
-                    type="text" 
-                    placeholder="Optional" 
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all" 
-                    value={purchaseForm.supplier} 
-                    onChange={e => setPurchaseForm({ ...purchaseForm, supplier: e.target.value })} 
+                  <input
+                    type="text"
+                    placeholder="Optional"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                    value={purchaseForm.supplier}
+                    onChange={e => setPurchaseForm({ ...purchaseForm, supplier: e.target.value })}
                   />
                 </div>
               </div>
@@ -1434,14 +1434,14 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
-                <button 
-                  onClick={() => setShowAddPurchase(false)} 
+                <button
+                  onClick={() => setShowAddPurchase(false)}
                   className="px-6 py-2.5 border border-gray-200 rounded-xl text-gray-600 font-bold hover:bg-gray-50 transition-colors"
                 >
                   {t('admin.common.cancel')}
                 </button>
-                <button 
-                  onClick={savePurchase} 
+                <button
+                  onClick={savePurchase}
                   className="px-6 py-2.5 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 shadow-lg shadow-orange-500/30 transition-all active:scale-95"
                 >
                   {editingPurchase ? t('admin.common.update') : t('admin.inventory.addPurchase')}
@@ -1711,7 +1711,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
                 <X size={24} />
               </button>
             </div>
-            
+
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr><th className="px-6 py-3">{t('cashier.receipt.orderNumber')}</th><th className="px-6 py-3">{t('admin.inventory.date')}</th><th className="px-6 py-3">{t('admin.users.fullName')}</th><th className="px-6 py-3">{t('admin.tabs.menu')}</th><th className="px-6 py-3">{t('admin.inventory.total')}</th><th className="px-6 py-3">{t('admin.reports.status')}</th></tr>
@@ -1752,7 +1752,7 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
                 <X size={24} />
               </button>
             </div>
-            
+
             <div className="space-y-3 mb-6">
               {(() => {
                 const itemAggregates = {};
@@ -1765,10 +1765,10 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
                     itemAggregates[item.name].total += (item.price * item.quantity);
                   });
                 });
-                
+
                 const aggregatedArray = Object.entries(itemAggregates).map(([name, data]) => ({ name, ...data }));
                 aggregatedArray.sort((a, b) => b.quantity - a.quantity);
-                
+
                 if (aggregatedArray.length === 0) {
                   return <p className="text-gray-500 text-center py-8">No items sold today</p>;
                 }
@@ -1798,4 +1798,4 @@ function AdminDashboard({ user, initialTab = 'overview' }) {
 export default AdminDashboard;
 
 
-
+
