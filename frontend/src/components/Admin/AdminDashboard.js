@@ -17,6 +17,7 @@ import {
   getDashboardStats, addTransaction, getTransactions, updateTransaction, deleteTransaction,
   getFinancialSummary, recordSalary, updateOrderStatus,
   subscribeToKitchenOrders, addPurchase, subscribeToPurchases,
+  subscribeToLiveInventory,
   getAllOrders, deletePurchase, updatePurchase
 } from '../../services/firebaseService';
 import {
